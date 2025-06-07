@@ -4,51 +4,16 @@ import { stableTopoSort } from './logic/translateARM';
 import { BpmnViewer } from './components/BpmnViewer';
 import type { ARMMatrix } from './logic/translateARM';
 
+import sampleARMJson from './data/sampleARM1.json';
+
+
 //export type Existential = "⇔" | "⇎" | "⇒" | "⇐" | "x";
-
-//ARM Sample
-const sampleARM: ARMMatrix = {
-  a: {
-    a: ["x", "x"],
-    b: ["<d", "⇐"],
-    c: ["<", "⇐"],
-    d: ["<", "⇔"],
-    e: ["<d", "⇐"]
-  },
-  b: {
-    a: [">d", "⇒"],
-    b: ["x", "x"],
-    c: ["<d", "⇔"],
-    d: ["<", "⇒"],
-    e: ["-", "⇎"]
-  },
-  c: {
-    a: [">", "⇒"],
-    b: [">d", "⇔"],
-    c: ["x", "x"],
-    d: ["<d", "⇒"],
-    e: ["-", "⇎"]
-  },
-  d: {
-    a: [">", "⇔"],
-    b: [">", "⇐"],
-    c: [">d", "⇐"],
-    d: ["x", "x"],
-    e: ["<d", "⇐"]
-  },
-  e: {
-    a: [">d", "⇒"],
-    b: ["-", "⇎"],
-    c: ["-", "⇎"],
-    d: [">d", "⇒"],
-    e: ["x", "x"]
-  }
-};
-
 
 function App() {
   const [log, setLog] = useState<string[]>([]);
   const [bpmnXml, setBpmnXml] = useState('');
+
+  const sampleARM = sampleARMJson as unknown as ARMMatrix;
 
   useEffect(() => {
     const logs: string[] = [];
