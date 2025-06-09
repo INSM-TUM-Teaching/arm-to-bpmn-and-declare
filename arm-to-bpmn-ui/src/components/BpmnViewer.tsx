@@ -21,6 +21,6 @@ export const BpmnViewer: React.FC<BpmnViewerProps> = ({ xml }) => {
   }, [xml]);
 
   return (
-    <div className="mt-6 border border-orange-400 rounded" ref={containerRef} style={{ height: '500px' }} />
+    <div className="mt-6 border border-orange-400 rounded" ref={containerRef} role="region" style={{ height: '500px' }} />
   );
 };
