@@ -1,238 +1,189 @@
-import type { ARMMatrix, Relation, Existential } from './translateARM';
+import type { ARMMatrix } from './translateARM';
+import { buildBPMNModelWithAnalysis } from './buildBPMNModelWithAnalysis';
 
-export interface BPMNTask {
-  id: string;
-  incoming: string[];
-  outgoing: string[];
-}
+export async function generateBPMNXmlFromARM(matrix: ARMMatrix): Promise<string> {
+  const analysis = buildBPMNModelWithAnalysis(matrix);
 
-export interface BPMNGateway {
-  id: string;
-  type: "parallel" | "exclusive";
-  incoming: string[];
-  outgoing: string[];
-}
+  const elements = new Map<string, { type: string; name?: string }>();
+  const flows: Array<{ from: string; to: string }> = [];
+  const gateways = new Set<string>();
+  const replacedPairs = new Set<string>();
 
-export interface BPMNModel {
-  tasks: Record<string, BPMNTask>;
-  gateways: Record<string, BPMNGateway>; 
-  flows: { from: string; to: string }[];
-}
-
-
-export interface BPMNModel {
-  tasks: Record<string, BPMNTask>;
-  flows: { from: string; to: string }[];
-}
-
-export function buildBPMN(matrix: ARMMatrix): BPMNModel {
-  const model: BPMNModel = {
-    tasks: {},
-    flows: [],
-    gateways: {},
-  };
-
-  // Step 1: Create a task node for every activity
-  for (const activity in matrix) {
-    model.tasks[activity] = {
-      id: activity,
-      incoming: [],
-      outgoing: []
-    };
+  // Add tasks
+  for (const activity of analysis.topoOrder) {
+    elements.set(activity, { type: 'task', name: activity });
   }
 
-  // Step 2: Add sequence flows for each strict temporal relation
-  for (const from in matrix) {
-    for (const to in matrix[from]) {
-      const [temporal] = matrix[from][to];
-      if (temporal === "<" || temporal === "<d") {
-        model.flows.push({ from, to });
-        model.tasks[from].outgoing.push(to);
-        model.tasks[to].incoming.push(from);
-      }
+  // Exclusive gateways
+  for (const [a, b] of analysis.exclusive) {
+    const splitId = `XOR_Split_${a}_${b}`;
+    const joinId = `XOR_Join_${a}_${b}`;
+    elements.set(splitId, { type: 'exclusiveGateway', name: 'XOR Split' });
+    elements.set(joinId, { type: 'exclusiveGateway', name: 'XOR Join' });
+    gateways.add(splitId);
+    gateways.add(joinId);
+
+    flows.push({ from: a, to: splitId }, { from: splitId, to: b }, { from: b, to: joinId });
+    replacedPairs.add(`${a}->${b}`);
+  }
+
+  // Parallel gateways
+  for (const [a, b] of analysis.parallel) {
+    const splitId = `AND_Split_${a}_${b}`;
+    const joinId = `AND_Join_${a}_${b}`;
+    elements.set(splitId, { type: 'parallelGateway', name: 'AND Split' });
+    elements.set(joinId, { type: 'parallelGateway', name: 'AND Join' });
+    gateways.add(splitId);
+    gateways.add(joinId);
+
+    flows.push({ from: a, to: splitId }, { from: splitId, to: b }, { from: b, to: joinId });
+    replacedPairs.add(`${a}->${b}`);
+  }
+
+  // Add direct flows only if not handled by gateway
+  for (const [from, to] of analysis.chains) {
+    if (!replacedPairs.has(`${from}->${to}`)) {
+      flows.push({ from, to });
     }
   }
 
-  return model;
-}
+  // Start and End events
+  const processId = 'Process_' + Math.random().toString(36).substring(2, 9);
+  const firstActivity = analysis.topoOrder[0];
+  const lastActivity = analysis.topoOrder[analysis.topoOrder.length - 1];
 
+  flows.push({ from: 'StartEvent_1', to: firstActivity });
+  flows.push({ from: lastActivity, to: 'EndEvent_1' });
 
-//insert gateway 
-let gatewayCounter = 1;
+  // Layout
+  const layers: Map<number, string[]> = new Map();
+  const visited = new Set<string>();
+  function dfs(node: string, depth: number) {
+    if (visited.has(node)) return;
+    visited.add(node);
+    if (!layers.has(depth)) layers.set(depth, []);
+    layers.get(depth)!.push(node);
+    const children = flows.filter(f => f.from === node).map(f => f.to);
+    for (const child of children) dfs(child, depth + 1);
+  }
+  dfs(firstActivity, 0);
 
-function insertGateway(
-  model: BPMNModel,
-  source: string,
-  targets: string[],
-  type: "parallel" | "exclusive"
-) {
-  const gatewayId = `Gateway_${gatewayCounter++}`;
-  console.log("Inserting gateway", gatewayId, "from", source, "to", targets, "type:", type);
+  // Build XML
+  let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  id="Definitions_1"
+                  targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="${processId}" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_StartEvent_1_${firstActivity}</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:endEvent id="EndEvent_1">
+      <bpmn:incoming>Flow_${lastActivity}_EndEvent_1</bpmn:incoming>
+    </bpmn:endEvent>`;
 
-  model.gateways[gatewayId] = {
-    id: gatewayId,
-    type,
-    incoming: [source],
-    outgoing: targets
-  };
+  // Add elements with filtered in/out for tasks
+  for (const [id, element] of elements) {
+    let incoming: string[] = [];
+    let outgoing: string[] = [];
 
-  //1. Remove direct flows
-  model.flows = model.flows.filter(f => !(f.from === source && targets.includes(f.to)));
+    if (!gateways.has(id) && id !== 'StartEvent_1' && id !== 'EndEvent_1') {
+      const inFlow = flows.find(f => f.to === id);
+      const outFlow = flows.find(f => f.from === id);
+      if (inFlow) incoming.push(`Flow_${inFlow.from}_${id}`);
+      if (outFlow) outgoing.push(`Flow_${id}_${outFlow.to}`);
+    } else {
+      incoming = flows.filter(f => f.to === id).map(f => `Flow_${f.from}_${id}`);
+      outgoing = flows.filter(f => f.from === id).map(f => `Flow_${id}_${f.to}`);
+    }
 
-  //2. Fix `outgoing` in source to point only to gateway
-  model.tasks[source].outgoing = [gatewayId];
-
-  //3. Add new flow: source → gateway
-  model.flows.push({ from: source, to: gatewayId });
-
-  //4. For each target, add gateway → target
-  for (const target of targets) {
-    model.flows.push({ from: gatewayId, to: target });
-
-    // Replace incoming link from source to gateway
-    model.tasks[target].incoming = model.tasks[target].incoming.map(id =>
-      id === source ? gatewayId : id
-    );
+    xml += `
+    <bpmn:${element.type} id="${id}" name="${element.name || ''}">`;
+    for (const inc of incoming) xml += `
+      <bpmn:incoming>${inc}</bpmn:incoming>`;
+    for (const out of outgoing) xml += `
+      <bpmn:outgoing>${out}</bpmn:outgoing>`;
+    xml += `
+    </bpmn:${element.type}>`;
   }
 
-  return gatewayId;
-}
+  // Render flows (one per task)
+  const taskFlowCounts = new Set<string>();
+  for (const flow of flows) {
+    const isFromTask = elements.has(flow.from) && elements.get(flow.from)!.type === 'task';
+    const isToTask = elements.has(flow.to) && elements.get(flow.to)!.type === 'task';
 
+    const key = `${flow.from}->${flow.to}`;
+    if ((isFromTask && [...taskFlowCounts].some(k => k.startsWith(`${flow.from}->`))) ||
+        (isToTask && [...taskFlowCounts].some(k => k.endsWith(`->${flow.to}`)))) {
+      continue;
+    }
 
-//insert paarallel gateway
-export function insertParallelGateways(model: BPMNModel, arm: ARMMatrix) {
-  for (const source in model.tasks) {
-    const outgoing = model.tasks[source].outgoing;
+    xml += `
+    <bpmn:sequenceFlow id="Flow_${flow.from}_${flow.to}" sourceRef="${flow.from}" targetRef="${flow.to}" />`;
+    taskFlowCounts.add(key);
+  }
 
-    if (outgoing.length <= 1) continue; // skip if no split
+  // BPMN DI
+  xml += `
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="${processId}">`;
 
-    const types = outgoing.map((target) => {
-      const relation = arm[source]?.[target];
-      return relation ? relation[1] : "x"; // get existential part
+  const elementPositions = new Map<string, { x: number; y: number }>();
+  let xOffset = 150;
+  let yOffset = 100;
+
+  for (const [depth, nodes] of layers.entries()) {
+    const y = yOffset + depth * 150;
+    nodes.forEach((id, i) => {
+      const x = xOffset + i * 200;
+      elementPositions.set(id, { x, y });
+      const width = gateways.has(id) ? 50 : 100;
+      const height = gateways.has(id) ? 50 : 80;
+      xml += `
+      <bpmndi:BPMNShape id="${id}_di" bpmnElement="${id}">
+        <dc:Bounds x="${x}" y="${y}" width="${width}" height="${height}" />
+      </bpmndi:BPMNShape>`;
     });
-
-        const uniqueTypes = new Set(types);
-
-        if (uniqueTypes.size === 1) {
-        const type = uniqueTypes.values().next().value;
-        if (type === "⇔") {
-            insertGateway(model, source, outgoing, "parallel");
-        } else if (type === "⇎") {
-            insertGateway(model, source, outgoing, "exclusive");
-        }
-        }
-
   }
-}
 
-export function generateBPMNXml(model: BPMNModel): string {
-  const startTargets = Object.keys(model.tasks).filter(id => model.tasks[id].incoming.length === 0);
-  const endSources = Object.keys(model.tasks).filter(id => model.tasks[id].outgoing.length === 0);
-  console.log("All flows:", model.flows);
-  console.log("Tasks:", model.tasks);
-  console.log("Flows:", model.flows);
-  console.log("Gateways:", model.gateways);
+  elementPositions.set('StartEvent_1', { x: 100, y: 50 });
+  elementPositions.set('EndEvent_1', { x: 1000, y: yOffset + layers.size * 150 });
 
-    const allFlows = [
-    ...model.flows,
-    ...startTargets.map(id => ({ from: "StartEvent_1", to: id })),
-    ...endSources.map(id => ({ from: id, to: "EndEvent_1" }))
-    ];
-
-
-  const tasksXml = Object.keys(model.tasks).map(id => {
-    return `<bpmn:task id="${id}" name="${id}">
-      ${model.tasks[id].incoming.map(inId => `<bpmn:incoming>flow_${inId}_${id}</bpmn:incoming>`).join("\n")}
-      ${model.tasks[id].outgoing.map(outId => `<bpmn:outgoing>flow_${id}_${outId}</bpmn:outgoing>`).join("\n")}
-    </bpmn:task>`;
-  });
-
-  const gatewaysXml = Object.values(model.gateways).map(gateway => {
-    const tag = gateway.type === "parallel" ? "bpmn:parallelGateway" : "bpmn:exclusiveGateway";
-    return `<${tag} id="${gateway.id}">
-      ${gateway.incoming.map(inId => `<bpmn:incoming>flow_${inId}_${gateway.id}</bpmn:incoming>`).join("\n")}
-      ${gateway.outgoing.map(outId => `<bpmn:outgoing>flow_${gateway.id}_${outId}</bpmn:outgoing>`).join("\n")}
-    </${tag}>`;
-  });
-
-const sequenceFlowsXml = allFlows.map(({ from, to }) =>
-  `<bpmn:sequenceFlow id="flow_${from}_${to}" sourceRef="${from}" targetRef="${to}" />`
-);
-
-const edgeElements = allFlows.map(({ from, to }) => `
-  <bpmndi:BPMNEdge id="edge_${from}_${to}" bpmnElement="flow_${from}_${to}">
-    <di:waypoint x="0" y="0" />
-    <di:waypoint x="0" y="0" />
-  </bpmndi:BPMNEdge>
-`);
-
-  const startEvent = `<bpmn:startEvent id="StartEvent_1">
-    ${startTargets.map(id => `<bpmn:outgoing>flow_StartEvent_1_${id}</bpmn:outgoing>`).join("\n")}
-  </bpmn:startEvent>`;
-
-  const endEvent = `<bpmn:endEvent id="EndEvent_1">
-    ${endSources.map(id => `<bpmn:incoming>flow_${id}_EndEvent_1</bpmn:incoming>`).join("\n")}
-  </bpmn:endEvent>`;
-
-
-
-  const shapeElements = Object.keys(model.tasks).map((id, index) => {
-    const x = 150;
-    const y = 100 + index * 100;
-    return `
-      <bpmndi:BPMNShape id="shape_${id}" bpmnElement="${id}">
-        <dc:Bounds x="${x}" y="${y}" width="100" height="80"/>
+  xml += `
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="100" y="50" width="36" height="36" />
       </bpmndi:BPMNShape>
-    `;
-  });
+      <bpmndi:BPMNShape id="EndEvent_1_di" bpmnElement="EndEvent_1">
+        <dc:Bounds x="1000" y="${yOffset + layers.size * 150}" width="36" height="36" />
+      </bpmndi:BPMNShape>`;
 
-  const gatewayShapes = Object.values(model.gateways).map((gw, index) => {
-    const x = 400;
-    const y = 100 + index * 100;
-    return `
-      <bpmndi:BPMNShape id="shape_${gw.id}" bpmnElement="${gw.id}">
-        <dc:Bounds x="${x}" y="${y}" width="50" height="50"/>
-      </bpmndi:BPMNShape>
-    `;
-  });
+  for (const flow of flows) {
+    const key = `${flow.from}->${flow.to}`;
+    if (!taskFlowCounts.has(key)) continue;
 
-  const startBounds = `
-    <bpmndi:BPMNShape id="shape_StartEvent_1" bpmnElement="StartEvent_1">
-      <dc:Bounds x="50" y="50" width="36" height="36"/>
-    </bpmndi:BPMNShape>
-  `;
+    const source = elementPositions.get(flow.from);
+    const target = elementPositions.get(flow.to);
+    if (source && target) {
+      const sourceX = source.x + 50;
+      const sourceY = source.y + 40;
+      const targetX = target.x;
+      const targetY = target.y + 40;
+      xml += `
+      <bpmndi:BPMNEdge id="Flow_${flow.from}_${flow.to}_di" bpmnElement="Flow_${flow.from}_${flow.to}">
+        <di:waypoint x="${sourceX}" y="${sourceY}" />
+        <di:waypoint x="${targetX}" y="${targetY}" />
+      </bpmndi:BPMNEdge>`;
+    }
+  }
 
-  const endBounds = `
-    <bpmndi:BPMNShape id="shape_EndEvent_1" bpmnElement="EndEvent_1">
-      <dc:Bounds x="600" y="50" width="36" height="36"/>
-    </bpmndi:BPMNShape>
-  `;
+  xml += `
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>`;
 
-
-  return `<?xml version="1.0" encoding="UTF-8"?>
-  <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
-                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
-                    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
-                    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
-                    id="Definitions_1"
-                    targetNamespace="http://bpmn.io/schema/bpmn">
-    <bpmn:process id="Process_1" isExecutable="false">
-      ${startEvent}
-      ${tasksXml.join("\n")}
-      ${gatewaysXml.join("\n")}
-      ${endEvent}
-      ${sequenceFlowsXml.join("\n")}
-    </bpmn:process>
-
-    <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-      <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">
-        ${startBounds}
-        ${endBounds}
-        ${shapeElements.join("\n")}
-        ${gatewayShapes.join("\n")}
-        ${edgeElements.join("\n")}
-      </bpmndi:BPMNPlane>
-    </bpmndi:BPMNDiagram>
-  </bpmn:definitions>`;
+  return xml;
 }

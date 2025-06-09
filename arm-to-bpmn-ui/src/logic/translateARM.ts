@@ -1,62 +1,166 @@
-export type Relation = "<" | "<d" | ">" | ">d" | "-" | "x";
-export type Existential = "⇔" | "⇎" | "⇒" | "⇐" | "x";
+// Define possible types of temporal and existential relations
+export type TemporalRelation = "<" | "<d" | ">" | ">d" | "-" | "x";
+export type ExistentialRelation = "⇔" | "⇎" | "⇒" | "⇐" | "∨" | "¬" | "-" | "x";
 
-export interface ARMMatrix {
-  [source: string]: {
-    [target: string]: [Relation, Existential];
-  };
+// Define the structure of an ARM matrix:
+// Each key is an activity, mapping to other activities with a [TemporalRelation, ExistentialRelation] tuple
+export type ARMMatrix = Record<string, Record<string, [TemporalRelation, ExistentialRelation]>>;
+
+/**
+ * Perform topological sorting using Kahn's algorithm.
+ * - V: list of nodes
+ * - E: list of directed edges [from, to]
+ * - cmp: optional comparator for sorting the zero-indegree nodes
+ * 
+ * Throws an error if a cycle is detected.
+ */
+export function kahnTopo<V extends string | number>(
+  V: V[],
+  E: Array<[V, V]>,
+  cmp?: (a: V, b: V) => number
+): V[] {
+  const adj = new Map<V, V[]>(), indeg = new Map<V, number>();
+
+  // Initialize adjacency list and indegree count
+  V.forEach(v => {
+    adj.set(v, []);
+    indeg.set(v, 0);
+  });
+
+  // Populate edges and compute indegrees
+  for (const [u, v] of E) {
+    adj.get(u)!.push(v);
+    indeg.set(v, (indeg.get(v) ?? 0) + 1);
+  }
+
+  // Queue of zero-indegree nodes, optionally sorted
+  const queue: V[] = V
+    .filter(v => indeg.get(v) === 0)
+    .sort(cmp ?? ((a, b) => (a < b ? -1 : 1)));
+
+  const out: V[] = [];
+
+  while (queue.length) {
+    const u = queue.shift()!;
+    out.push(u);
+
+    for (const v of adj.get(u)!) {
+      indeg.set(v, indeg.get(v)! - 1);
+
+      if (indeg.get(v) === 0) {
+        const i = queue.findIndex(x => (cmp ?? ((a, b) => (a < b ? -1 : 1)))(v, x) < 0);
+        if (i === -1) queue.push(v);
+        else queue.splice(i, 0, v);
+      }
+    }
+  }
+
+  // If not all nodes are visited, there's a cycle
+  if (out.length !== V.length) {
+    throw new Error('Cycle detected: temporal relations are inconsistent');
+  }
+
+  return out;
 }
 
 /**
- * stableTopoSort:
- * Performs a topological sort based on strict temporal relations (< and <d).
- * Returns an array of layers, each containing nodes that can execute in parallel.
+ * Extract direct temporal chains from the ARM matrix.
+ * Includes relations where one activity strictly precedes another: '<' or '<d'.
  */
-export function stableTopoSort(matrix: ARMMatrix): string[][] {
-  const graph: Record<string, Set<string>> = {};
-  const inDegree: Record<string, number> = {};
-
-  // Step 1: Build dependency graph and in-degree map
+export function extractTemporalChains(matrix: ARMMatrix): Array<[string, string]> {
+  const chains: Array<[string, string]> = [];
   for (const from in matrix) {
-    if (!graph[from]) graph[from] = new Set();
-
     for (const to in matrix[from]) {
-      const [temporal] = matrix[from][to];
-
-      if (temporal === "<" || temporal === "<d") {
-        graph[from].add(to);
-        inDegree[to] = (inDegree[to] || 0) + 1;
+      const [temp] = matrix[from][to];
+      if (temp === "<" || temp === "<d") {
+        chains.push([from, to]);
       }
     }
+  }
+  return chains;
+}
 
-    if (!(from in inDegree)) {
-      inDegree[from] = inDegree[from] || 0;
+/**
+ * Detect exclusive relationships between activities.
+ * Looks for existential relations that imply exclusivity: ⇎, ∨, ¬
+ */
+export function detectExclusiveRelations(matrix: ARMMatrix): Array<[string, string]> {
+  const exclusives: Array<[string, string]> = [];
+  const keys = Object.keys(matrix);
+
+  for (let i = 0; i < keys.length; i++) {
+    for (let j = i + 1; j < keys.length; j++) {
+      const a = keys[i];
+      const b = keys[j];
+      const exist = matrix[a]?.[b]?.[1] || matrix[b]?.[a]?.[1];
+      if (["⇎", "∨", "¬"].includes(exist)) {
+        exclusives.push([a, b]);
+      }
     }
   }
 
-  // Step 2: Layered Topological Sort
-  const layers: string[][] = [];
-  let layer: string[] = Object.entries(inDegree)
-    .filter(([_, deg]) => deg === 0)
-    .map(([key]) => key);
+  return exclusives;
+}
 
-  while (layer.length > 0) {
-    layers.push([...layer]);
-    const nextLayer: string[] = [];
+/**
+ * Detects parallel activity pairs from the ARM matrix.
+ * Two activities are considered parallel if:
+ * - They are not exclusive (no ⇎, ∨, or ¬ relation).
+ * - They are temporally independent ("-" relation).
+ * - They both have a strict temporal dependency (<d) to a common successor.
+ * 
+ * Returns all such pairs [a, b] where a || b (can execute in parallel before merging).
+ */
+export function detectParallelRelations(matrix: ARMMatrix): Array<[string, string]> {
+  const parallelPairs: Array<[string, string]> = [];
+  const activities = Object.keys(matrix);
 
-    for (const node of layer) {
-      if (!graph[node]) continue;
+  for (let i = 0; i < activities.length; i++) {
+    for (let j = i + 1; j < activities.length; j++) {
+      const a = activities[i];
+      const b = activities[j];
 
-      for (const neighbor of graph[node]) {
-        inDegree[neighbor]--;
-        if (inDegree[neighbor] === 0) {
-          nextLayer.push(neighbor);
-        }
+      const t1 = matrix[a]?.[b]?.[0];
+      const t2 = matrix[b]?.[a]?.[0];
+      const e1 = matrix[a]?.[b]?.[1];
+      const e2 = matrix[b]?.[a]?.[1];
+
+      const aTargets = Object.entries(matrix[a] || {})
+        .filter(([_, [t]]) => t === "<d")
+        .map(([target]) => target);
+
+      const bTargets = Object.entries(matrix[b] || {})
+        .filter(([_, [t]]) => t === "<d")
+        .map(([target]) => target);
+
+      const commonTarget = aTargets.find(t => bTargets.includes(t));
+
+      if (
+        commonTarget &&
+        (t1 === "-" || t2 === "-") &&
+        !["⇎", "∨", "¬"].includes(e1) &&
+        !["⇎", "∨", "¬"].includes(e2)
+      ) {
+        parallelPairs.push([a, b]);
       }
     }
-
-    layer = nextLayer;
   }
 
-  return layers;
+  return parallelPairs;
+}
+
+/**
+ * Detect optional or inclusive dependencies in the ARM matrix.
+ * These include "⇒" (optional_to) and "⇐" (optional_from) relationships.
+ */
+export function detectOptionalDependencies(matrix: ARMMatrix): Array<[string, string, "optional_to" | "optional_from"]> {
+  const optionals: Array<[string, string, "optional_to" | "optional_from"]> = [];
+  for (const a in matrix) {
+    for (const b in matrix[a]) {
+      const exist = matrix[a][b][1];
+      if (exist === "⇒") optionals.push([a, b, "optional_to"]);
+      if (exist === "⇐") optionals.push([a, b, "optional_from"]);
+    }
+  }
+  return optionals;
 }
