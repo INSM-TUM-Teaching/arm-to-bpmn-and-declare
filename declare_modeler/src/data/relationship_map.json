@@ -1,0 +1,14 @@
+{
+  "<d⇒": "chain_response",
+  "<d⇔": "chain_succession",
+  "<d-": "chain_precedence",
+  "<⇒": "response",
+  "<⇔": "succession",
+  "<-": "precedence",
+  "-⇒": "responded-existence",
+  "-⇔": "coexistence",
+  "-⇎": "not-coexistence",
+  "-∨": "inclusive_or",
+  "-∧": "nand",
+  "--": "independent"
+}
