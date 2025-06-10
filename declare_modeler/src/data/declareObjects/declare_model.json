@@ -1,0 +1,44 @@
+{
+  "activities": [
+    "a",
+    "b",
+    "c",
+    "d",
+    "e",
+    "f",
+    "g"
+  ],
+  "unary": [
+    {
+      "activity": "a",
+      "constraint": "init"
+    }
+  ],
+  "constraints": [
+    {
+      "source": "d",
+      "target": "e",
+      "constraint": "succession"
+    },
+    {
+      "source": "d",
+      "target": "b",
+      "constraint": "not co-existence"
+    },
+    {
+      "source": "b",
+      "target": "c",
+      "constraint": "chain response"
+    },
+    {
+      "source": "f",
+      "target": "d",
+      "constraint": "responded existence"
+    },
+    {
+      "source": "f",
+      "target": "g",
+      "constraint": "responded existence"
+    }
+  ]
+}
