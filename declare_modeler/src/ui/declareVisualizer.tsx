@@ -1,10 +1,13 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import cytoscape from "cytoscape";
 import declareModel from "../data/declareObjects/declare_model.json";
 
 const DeclareVisualizer: React.FC = () => {
     const containerRef = useRef<HTMLDivElement | null>(null);
     const cyRef = useRef<cytoscape.Core | null>(null);
+    const [panelPos, setPanelPos] = useState({ x: window.innerWidth - 360, y: 80 });
+    const [dragging, setDragging] = useState(false);
+    const panelRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         if (!containerRef.current) return;
@@ -174,7 +177,8 @@ const DeclareVisualizer: React.FC = () => {
                     }
                 }
             ]
-        });
+        }
+        );
         cyRef.current = cy;
 
         // Add nodes
@@ -306,7 +310,26 @@ const DeclareVisualizer: React.FC = () => {
         return () => {
             cy.destroy();
         };
-    }, []);
+    }, [dragging]);
+    useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+        if (dragging) {
+            setPanelPos((prev) => ({
+                x: prev.x + e.movementX,
+                y: prev.y + e.movementY
+            }));
+        }
+    };
+    const handleMouseUp = () => setDragging(false);
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+        window.removeEventListener("mousemove", handleMouseMove);
+        window.removeEventListener("mouseup", handleMouseUp);
+    };
+}, [dragging]);
 
     return (
         <div>
@@ -403,7 +426,70 @@ const DeclareVisualizer: React.FC = () => {
                 >
                     Save as Image
                 </button>
+            </div>
+            <div
+                ref={panelRef}
+                style={{
+                    position: "absolute",
+                    top: panelPos.y,
+                    left: panelPos.x,
+                    width: "320px",
+                    zIndex: 1000,
+                    border: "2px solid #ccc",
+                    borderRadius: "0.5rem",
+                    backgroundColor: "white",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                }}
+            >
+                <div
+                    onMouseDown={() => setDragging(true)}
+                    style={{
+                        cursor: "move",
+                        padding: "8px 12px",
+                        background: "#f3f4f6",
+                        borderBottom: "1px solid #ddd",
+                        fontWeight: "bold",
+                        userSelect: "none",
+                    }}
+                >
+                    Edit Panel
+                </div>
+                <div className="space-y-4">
+                    <div>
+                        <div>
+                            <label className="block font-medium">Add Activity</label>
+                        </div>
+                        <div>
+                            <input type="text" placeholder="Activity name" className="w-full mt-1 px-3 py-2 border rounded" />
+                            <button className="mt-2 w-full bg-blue-600 text-white py-1.5 rounded hover:bg-blue-500">Add</button>
+                        </div>
+                    </div>
 
+                    <div>
+                        <div>
+                            <label className="block font-medium">Add Constraint</label>
+                        </div>
+                        <div>
+                            <input type="text" placeholder="Source" className="w-full mt-2 px-3 py-2 border rounded" />
+                            <select className="w-full mt-1 px-3 py-2 border rounded">
+                                <option value="">-- Select Constraint --</option>
+                                <option value="response">response</option>
+                                <option value="precedence">precedence</option>
+                                <option value="succession">succession</option>
+                                <option value="not-coexistence">not-coexistence</option>
+                                <option value="not-succession">not-succession</option>
+                            </select>
+                            <input type="text" placeholder="Target" className="w-full mt-2 px-3 py-2 border rounded" />
+                            <button className="mt-2 w-full bg-blue-600 text-white py-1.5 rounded hover:bg-blue-500">Add</button>
+                        </div>
+                    </div>
+
+                    {/* <div>
+                        <label className="block font-medium">Delete by ID</label>
+                        <input type="text" placeholder="Element ID" className="w-full mt-1 px-3 py-2 border rounded" />
+                        <button className="mt-2 w-full bg-red-600 text-white py-1.5 rounded hover:bg-red-500">Delete</button>
+                    </div> */}
+                </div>
             </div>
         </div>
     );
