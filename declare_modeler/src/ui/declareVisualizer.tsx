@@ -4,6 +4,7 @@ import declareModel from "../data/declareObjects/declare_model.json";
 
 const DeclareVisualizer: React.FC = () => {
     const containerRef = useRef<HTMLDivElement | null>(null);
+    const cyRef = useRef<cytoscape.Core | null>(null);
 
     useEffect(() => {
         if (!containerRef.current) return;
@@ -174,6 +175,7 @@ const DeclareVisualizer: React.FC = () => {
                 }
             ]
         });
+        cyRef.current = cy;
 
         // Add nodes
         const nodes = declareModel.activities.map((act) => ({
@@ -310,8 +312,102 @@ const DeclareVisualizer: React.FC = () => {
         <div>
             <h2 style={{ textAlign: "center", margin: "12px 0" }}>Declare Model Visualization</h2>
             <div ref={containerRef} style={{ width: "100%", height: "700px", border: "1px solid #ccc" }}></div>
+            <div style={{ marginTop: "10px", display: "flex", justifyContent: "center", gap: "12px" }}>
+                <button
+                    onClick={() => {
+                        if (!cyRef.current) return;
+
+                        const cy = cyRef.current;
+
+                        const activities = cy.nodes().filter(n => !n.hasClass("init-node")).map(node => ({
+                            name: node.data('label'),
+                            position: node.position()
+                        }));
+
+                        const constraints = cy.edges().filter(e => !e.data('constraint')?.startsWith("init")).map(edge => ({
+                            source: edge.source().data('label'),
+                            target: edge.target().data('label'),
+                            constraint: edge.data('constraint')
+                        }));
+
+                        const unary = cy.edges().filter(e => e.data('constraint') === "init").map(edge => ({
+                            activity: edge.target().data('label'),
+                            constraint: "init"
+                        }));
+
+                        const declareModelWithLayout = {
+                            activities,
+                            constraints,
+                            unary
+                        };
+
+                        const blob = new Blob(
+                            [JSON.stringify(declareModelWithLayout, null, 2)],
+                            { type: "application/json" }
+                        );
+                        const a = document.createElement("a");
+                        a.href = URL.createObjectURL(blob);
+                        a.download = "declare_model.json";
+                        a.click();
+                    }}
+                    className="px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-600"
+                >
+                    Download JSON
+                </button>
+
+
+                <button
+                    onClick={() => {
+                        let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<model>\n`;
+                        declareModel.activities.forEach(act => {
+                            xml += `  <activity>${act}</activity>\n`;
+                        });
+                        declareModel.constraints.forEach(c => {
+                            xml += `  <constraint type="${c.constraint}">\n    <source>${c.source}</source>\n    <target>${c.target}</target>\n  </constraint>\n`;
+                        });
+                        if ("unary" in declareModel) {
+                            declareModel.unary.forEach(c => {
+                                xml += `  <constraint type="${c.constraint}">\n    <activity>${c.activity}</activity>\n  </constraint>\n`;
+                            });
+                        }
+                        xml += `</model>`;
+                        const blob = new Blob([xml], { type: "application/xml" });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = "declare_model.decl";
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    }}
+                    className="px-4 py-2 bg-blue-800 text-white rounded hover:bg-blue-700"
+                >
+                    Download XML (.decl)
+                </button>
+
+                <button
+                    onClick={() => {
+                        const cyEl = cyRef.current;
+                        if (cyEl) {
+                            const pngData = cyEl.png({
+                                full: true,
+                                scale: 2,
+                                bg: "#ffffff"  // set background to white
+                            });
+                            const a = document.createElement("a");
+                            a.href = pngData;
+                            a.download = "declare_model.png";
+                            a.click();
+                        }
+                    }}
+                    className="px-4 py-2 bg-green-700 text-white rounded hover:bg-green-600"
+                >
+                    Save as Image
+                </button>
+
+            </div>
         </div>
     );
+
 };
 
 export default DeclareVisualizer;
