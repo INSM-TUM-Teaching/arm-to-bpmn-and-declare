@@ -9,7 +9,11 @@ const DeclareVisualizer: React.FC = () => {
     const [dragging, setDragging] = useState(false);
     const panelRef = useRef<HTMLDivElement | null>(null);
     const [newActivity, setNewActivity] = useState("");
-
+    const [newConstraint, setNewConstraint] = useState({
+        source: "",
+        constraint: "",
+        target: ""
+    });
 
     useEffect(() => {
         if (!containerRef.current) return;
@@ -332,6 +336,7 @@ const DeclareVisualizer: React.FC = () => {
             window.removeEventListener("mouseup", handleMouseUp);
         };
     }, [dragging]);
+
     const handleAddActivity = () => {
         const cy = cyRef.current;
         if (!cy || !newActivity.trim()) return;
@@ -354,6 +359,95 @@ const DeclareVisualizer: React.FC = () => {
         setNewActivity(""); // clear input
     };
 
+    const handleAddConstraint = () => {
+        const cy = cyRef.current;
+        const { source, target, constraint } = newConstraint;
+
+        if (!cy || !source || !target || !constraint) return;
+        if (!cy.getElementById(source).length || !cy.getElementById(target).length) {
+            alert("Source or target node does not exist.");
+            return;
+        }
+
+        const idBase = `${source}->${target}-${constraint}`;
+        const existing = cy.edges(`[id *= "${idBase}"]`);
+        if (existing.length > 0) {
+            alert("Constraint already exists between these activities.");
+            return;
+        }
+
+        // Dual edges for some constraints
+        if (constraint === "succession") {
+            cy.add([
+                {
+                    data: {
+                        id: `${idBase}-triangle`,
+                        source,
+                        target,
+                        constraint: "succession-triangle"
+                    }
+                },
+                {
+                    data: {
+                        id: `${idBase}-circle`,
+                        source,
+                        target,
+                        constraint: "succession-circle"
+                    }
+                }
+            ]);
+        } else if (constraint === "precedence") {
+            cy.add([
+                {
+                    data: {
+                        id: `${idBase}-triangle`,
+                        source,
+                        target,
+                        constraint: "precedence-triangle"
+                    }
+                },
+                {
+                    data: {
+                        id: `${idBase}-circle`,
+                        source,
+                        target,
+                        constraint: "precedence-circle"
+                    }
+                }
+            ]);
+        } else if (constraint === "not-succession") {
+            cy.add([
+                {
+                    data: {
+                        id: `${idBase}-triangle`,
+                        source,
+                        target,
+                        constraint: "not-succession-triangle"
+                    }
+                },
+                {
+                    data: {
+                        id: `${idBase}-circle`,
+                        source,
+                        target,
+                        constraint: "not-succession-circle"
+                    }
+                }
+            ]);
+        } else {
+            // single edge constraints
+            cy.add({
+                data: {
+                    id: idBase,
+                    source,
+                    target,
+                    constraint
+                }
+            });
+        }
+
+        setNewConstraint({ source: "", constraint: "", target: "" });
+    };
 
     return (
         <div>
@@ -505,19 +599,52 @@ const DeclareVisualizer: React.FC = () => {
                             <label className="block font-medium">Add Constraint</label>
                         </div>
                         <div>
-                            <input type="text" placeholder="Source" className="w-full mt-2 px-3 py-2 border rounded" />
-                            <select className="w-full mt-1 px-3 py-2 border rounded">
+                            <input
+                                type="text"
+                                placeholder="Source"
+                                className="w-full mt-2 px-3 py-2 border rounded"
+                                value={newConstraint.source}
+                                onChange={(e) =>
+                                    setNewConstraint({ ...newConstraint, source: e.target.value })
+                                }
+                            />
+                            <select
+                                className="w-full mt-1 px-3 py-2 border rounded"
+                                value={newConstraint.constraint}
+                                onChange={(e) =>
+                                    setNewConstraint({ ...newConstraint, constraint: e.target.value })
+                                }
+                            >
                                 <option value="">-- Select Constraint --</option>
                                 <option value="response">response</option>
                                 <option value="precedence">precedence</option>
                                 <option value="succession">succession</option>
-                                <option value="not-coexistence">not-coexistence</option>
+                                <option value="not co-existence">not co-existence</option>
                                 <option value="not-succession">not-succession</option>
                             </select>
-                            <input type="text" placeholder="Target" className="w-full mt-2 px-3 py-2 border rounded" />
-                            <button className="mt-2 w-full bg-blue-600 text-white py-1.5 rounded hover:bg-blue-500">Add</button>
+                            <input
+                                type="text"
+                                placeholder="Target"
+                                className="w-full mt-2 px-3 py-2 border rounded"
+                                value={newConstraint.target}
+                                onChange={(e) =>
+                                    setNewConstraint({ ...newConstraint, target: e.target.value })
+                                }
+                            />
+                            <button
+                                onClick={handleAddConstraint}
+                                className="mt-2 w-full bg-blue-600 text-white py-1.5 rounded hover:bg-blue-500"
+                            >
+                                Add
+                            </button>
                         </div>
                     </div>
+
+                    {/* <div>
+                        <label className="block font-medium">Delete by ID</label>
+                        <input type="text" placeholder="Element ID" className="w-full mt-1 px-3 py-2 border rounded" />
+                        <button className="mt-2 w-full bg-red-600 text-white py-1.5 rounded hover:bg-red-500">Delete</button>
+                    </div> */}
                 </div>
             </div>
         </div>
