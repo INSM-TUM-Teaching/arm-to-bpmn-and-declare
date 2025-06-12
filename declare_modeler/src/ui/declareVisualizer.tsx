@@ -8,6 +8,8 @@ const DeclareVisualizer: React.FC = () => {
     const [panelPos, setPanelPos] = useState({ x: window.innerWidth - 360, y: 80 });
     const [dragging, setDragging] = useState(false);
     const panelRef = useRef<HTMLDivElement | null>(null);
+    const [newActivity, setNewActivity] = useState("");
+
 
     useEffect(() => {
         if (!containerRef.current) return;
@@ -312,24 +314,46 @@ const DeclareVisualizer: React.FC = () => {
         };
     }, [dragging]);
     useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-        if (dragging) {
-            setPanelPos((prev) => ({
-                x: prev.x + e.movementX,
-                y: prev.y + e.movementY
-            }));
+        const handleMouseMove = (e: MouseEvent) => {
+            if (dragging) {
+                setPanelPos((prev) => ({
+                    x: prev.x + e.movementX,
+                    y: prev.y + e.movementY
+                }));
+            }
+        };
+        const handleMouseUp = () => setDragging(false);
+
+        window.addEventListener("mousemove", handleMouseMove);
+        window.addEventListener("mouseup", handleMouseUp);
+
+        return () => {
+            window.removeEventListener("mousemove", handleMouseMove);
+            window.removeEventListener("mouseup", handleMouseUp);
+        };
+    }, [dragging]);
+    const handleAddActivity = () => {
+        const cy = cyRef.current;
+        if (!cy || !newActivity.trim()) return;
+
+        const exists = cy.nodes().some(n => n.id() === newActivity.trim());
+        if (exists) {
+            alert("Activity already exists.");
+            return;
         }
-    };
-    const handleMouseUp = () => setDragging(false);
 
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+        cy.add({
+            group: "nodes",
+            data: { id: newActivity, label: newActivity },
+            position: {
+                x: cy.width() / 2 + Math.random() * 50,
+                y: cy.height() / 2 + Math.random() * 50,
+            },
+        });
 
-    return () => {
-        window.removeEventListener("mousemove", handleMouseMove);
-        window.removeEventListener("mouseup", handleMouseUp);
+        setNewActivity(""); // clear input
     };
-}, [dragging]);
+
 
     return (
         <div>
@@ -460,8 +484,19 @@ const DeclareVisualizer: React.FC = () => {
                             <label className="block font-medium">Add Activity</label>
                         </div>
                         <div>
-                            <input type="text" placeholder="Activity name" className="w-full mt-1 px-3 py-2 border rounded" />
-                            <button className="mt-2 w-full bg-blue-600 text-white py-1.5 rounded hover:bg-blue-500">Add</button>
+                            <input
+                                type="text"
+                                value={newActivity}
+                                onChange={(e) => setNewActivity(e.target.value)}
+                                placeholder="Activity name"
+                                className="w-full mt-1 px-3 py-2 border rounded"
+                            />
+                            <button
+                                onClick={handleAddActivity}
+                                className="mt-2 w-full bg-blue-600 text-white py-1.5 rounded hover:bg-blue-500"
+                            >
+                                Add
+                            </button>
                         </div>
                     </div>
 
@@ -483,12 +518,6 @@ const DeclareVisualizer: React.FC = () => {
                             <button className="mt-2 w-full bg-blue-600 text-white py-1.5 rounded hover:bg-blue-500">Add</button>
                         </div>
                     </div>
-
-                    {/* <div>
-                        <label className="block font-medium">Delete by ID</label>
-                        <input type="text" placeholder="Element ID" className="w-full mt-1 px-3 py-2 border rounded" />
-                        <button className="mt-2 w-full bg-red-600 text-white py-1.5 rounded hover:bg-red-500">Delete</button>
-                    </div> */}
                 </div>
             </div>
         </div>
