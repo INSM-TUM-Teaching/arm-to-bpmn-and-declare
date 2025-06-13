@@ -1,10 +1,11 @@
-import { buildBPMN, insertParallelGateways, generateBPMNXml } from '../buildBPMN';
+import { generateBPMNXmlFromARM } from '../buildBPMN';
 import type { ARMMatrix } from '../translateARM';
+
 
 //Checks that the generateBPMNXml function correctly generates BPMN XML output.
 
 describe('generateBPMNXml', () => {
-  it('should generate valid BPMN XML with start and end events', () => {
+  it('should generate valid BPMN XML with start and end events', async () => {
     const matrix: ARMMatrix = {
       "a": {
         "a": ["x", "x"],
@@ -16,17 +17,19 @@ describe('generateBPMNXml', () => {
       }
     };
 
-    const model = buildBPMN(matrix);
-    const xml = generateBPMNXml(model);
+
+    const xml = await generateBPMNXmlFromARM(matrix);
 
     expect(xml).toContain('<bpmn:startEvent id="StartEvent_1">');
     expect(xml).toContain('<bpmn:endEvent id="EndEvent_1">');
     expect(xml).toContain('<bpmn:task id="a"');
     expect(xml).toContain('<bpmn:task id="b"');
-    expect(xml).toContain('flow_a_b');
+
+    expect(xml).toMatch(/Flow_a_b/);
+
   });
 
-  it('should include AND gateway in the XML if inserted', () => {
+  it('should include AND gateway in the XML if inserted', async () => {
     const matrix: ARMMatrix = {
       "a": {
         "a": ["x", "x"],
@@ -45,17 +48,15 @@ describe('generateBPMNXml', () => {
       }
     };
 
-    const model = buildBPMN(matrix);
-    insertParallelGateways(model, matrix);
-    const xml = generateBPMNXml(model);
+    const xml = await generateBPMNXmlFromARM(matrix);
 
-    expect(xml).toContain('<bpmn:parallelGateway');
-    expect(xml).toMatch(/flow_a_Gateway_\d+/); // a → Gateway
-    expect(xml).toMatch(/flow_Gateway_\d+_b/); // Gateway → b
-    expect(xml).toMatch(/flow_Gateway_\d+_c/); // Gateway → c
+    expect(xml).toContain('<bpmn:parallelGateway'); 
+    expect(xml).toMatch(/Flow_a_AND_Split_/);      
+    expect(xml).toMatch(/Flow_AND_Split_.*_b/);    
+    expect(xml).toMatch(/Flow_AND_Split_.*_c/);    
   });
 
-  it('should include XOR gateway in the XML if inserted', () => {
+  it('should include XOR gateway in the XML if inserted', async () => {
     const matrix: ARMMatrix = {
       "a": {
         "a": ["x", "x"],
@@ -94,14 +95,12 @@ describe('generateBPMNXml', () => {
       }
     };
 
-    const model = buildBPMN(matrix);
-    insertParallelGateways(model, matrix);
-    const xml = generateBPMNXml(model);
+    const xml = await generateBPMNXmlFromARM(matrix);
 
-    expect(xml).not.toContain('<bpmn:exclusiveGateway');
+    expect(xml).toContain('<bpmn:exclusiveGateway'); // XOR gateways
   });
 
-  it('should include BPMNDiagram and BPMNPlane in the XML', () => {
+  it('should include BPMNDiagram and BPMNPlane in the XML', async () => {
     const matrix: ARMMatrix = {
       "a": {
         "a": ["x", "x"],
@@ -129,8 +128,7 @@ describe('generateBPMNXml', () => {
       }
     };
 
-    const model = buildBPMN(matrix);
-    const xml = generateBPMNXml(model);
+    const xml = await generateBPMNXmlFromARM(matrix);
 
     expect(xml).toContain('<bpmndi:BPMNDiagram');
     expect(xml).toContain('<bpmndi:BPMNPlane');

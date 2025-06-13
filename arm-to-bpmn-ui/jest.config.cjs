@@ -7,5 +7,10 @@ module.exports = {
   testEnvironment: "jsdom",
   transform: {
     ...tsJestTransformCfg,
+    '^.+\\.(ts|tsx)$': 'ts-jest',
+    '^.+\\.[jt]sx?$': 'babel-jest',
   },
+  transformIgnorePatterns: [
+    '/node_modules/(?!(bpmn-js)/)', 
+  ],
 };
