@@ -62,5 +62,6 @@
     "e": ["-", "⇎"],
     "f": ["-", "⇒"],
     "g": ["x", "x"]
-  }
+  },
+  "_comment": "ARM input includes multiple parallel and XOR gateways / Examples_BPMN_ARM model 4"
 }

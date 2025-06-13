@@ -23,5 +23,6 @@
     "b": [">", "⇒"],
     "c": ["-", "⇔"],
     "d": ["x", "x"]
-  }
+  },
+  "_comment": "ARM input includes 2 XOR gateway / example 5 from Pelin's notes"
 }

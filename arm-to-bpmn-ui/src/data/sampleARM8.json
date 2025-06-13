@@ -23,5 +23,6 @@
     "b": ["-", "∨"],
     "c": ["-", "∨"],
     "d": ["x", "x"]
-  }
+  },
+  "_comment": "ARM input includes 2 OR gateways and 2 and gateways / Examples_BPMN_ARM model 2"
 }

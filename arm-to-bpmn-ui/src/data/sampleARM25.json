@@ -34,5 +34,6 @@
     "c": [">", "⇒"],
     "d": [">", "⇒"],
     "e": ["x", "x"]
-  }
+  },
+  "_comment": "ARM input includes 1 XOR gateway and 1 self loop / example 4 from Pelin's notes"
 }

@@ -22,5 +22,6 @@
     "b": [">", "⇔"],
     "c": ["-", "⇔"],
     "d": ["x", "x"]
-  }
+  },
+  "_comment": "ARM input includes 4 parallel gateways / Examples_BPMN_ARM model 3"
 }
