@@ -105,48 +105,49 @@ export function detectExclusiveRelations(matrix: ARMMatrix): Array<[string, stri
 /**
  * Detects parallel activity pairs from the ARM matrix.
  * Two activities are considered parallel if:
- * - They are not exclusive (no ⇎, ∨, or ¬ relation).
- * - They are temporally independent ("-" relation).
- * - They both have a strict temporal dependency (<d) to a common successor.
+ * - don’t depend on each other temporally, and
+aren’t exclusive or logically constrained,
  * 
  * Returns all such pairs [a, b] where a || b (can execute in parallel before merging).
  */
 export function detectParallelRelations(matrix: ARMMatrix): Array<[string, string]> {
-  const parallelPairs: Array<[string, string]> = [];
-  const activities = Object.keys(matrix);
+  const parallelPairs: Array<[string, string]> = []; // Stores pairs of activities that are parallel
+  const activities = Object.keys(matrix); // Get all activity names from the matrix
 
+  // Loop through all unique pairs of activities (combinations of a and b)
   for (let i = 0; i < activities.length; i++) {
     for (let j = i + 1; j < activities.length; j++) {
       const a = activities[i];
       const b = activities[j];
 
-      const t1 = matrix[a]?.[b]?.[0];
-      const t2 = matrix[b]?.[a]?.[0];
-      const e1 = matrix[a]?.[b]?.[1];
-      const e2 = matrix[b]?.[a]?.[1];
+      // Extract the temporal and eventual/logical relation from a to b,  ta/tb --> temporal dependencies
+      const [ta, ea] = matrix[a]?.[b] ?? ["-", "-"];
+      // Extract the temporal and eventual/logical relation from b to a, ea,eb --> eventual relations
+      const [tb, eb] = matrix[b]?.[a] ?? ["-", "-"];
 
-      const aTargets = Object.entries(matrix[a] || {})
-        .filter(([_, [t]]) => t === "<d")
-        .map(([target]) => target);
-
-      const bTargets = Object.entries(matrix[b] || {})
-        .filter(([_, [t]]) => t === "<d")
-        .map(([target]) => target);
-
-      const commonTarget = aTargets.find(t => bTargets.includes(t));
-
+      // Detect parallelism based on the following conditions:
+      // 1. There is no direct temporal order between a and b (ta and tb are "-") 
+      // 2. The logical relation is not exclusive, optional, or negative (ea and eb are not in ["⇎", "∨", "¬"]) 
       if (
-        commonTarget &&
-        (t1 === "-" || t2 === "-") &&
-        !["⇎", "∨", "¬"].includes(e1) &&
-        !["⇎", "∨", "¬"].includes(e2)
+        (ta === "-" || tb === "-") &&
+        !["⇎", "∨", "¬"].includes(ea) &&
+        !["⇎", "∨", "¬"].includes(eb)
       ) {
+        // If conditions are met, log and store this as a parallel pair
+        console.log(
+          "Detected parallel:",
+          a,
+          b,
+          "→",
+          matrix[a]?.[b] ?? "no entry",
+          matrix[b]?.[a] ?? "no entry"
+        );
         parallelPairs.push([a, b]);
       }
     }
   }
 
-  return parallelPairs;
+  return parallelPairs; 
 }
 
 /**
@@ -163,4 +164,18 @@ export function detectOptionalDependencies(matrix: ARMMatrix): Array<[string, st
     }
   }
   return optionals;
+}
+
+
+export function extractDirectTemporal(matrix: ARMMatrix): Array<[string, string]> {
+  const directTemporalChains: Array<[string, string]> = [];
+  for (const from in matrix) {
+    for (const to in matrix[from]) {
+      const [temp] = matrix[from][to];
+      if (temp === "<d") {
+        directTemporalChains.push([from, to]);
+      }
+    }
+  }
+   return directTemporalChains;
 }
