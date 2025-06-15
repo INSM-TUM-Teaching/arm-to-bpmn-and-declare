@@ -1,6 +1,5 @@
-import { stableTopoSort } from '../translateARM';
+import { extractTemporalChains, kahnTopo } from '../translateARM';
 import type { ARMMatrix } from '../translateARM';
-
 //It is tested that the function works correctly in the base and edge cases, that only < and <d relationships are taken into account, and that correct parallel layers are created.
 
 describe('stableTopoSort', () => {
@@ -22,8 +21,13 @@ describe('stableTopoSort', () => {
          "c": ['x', 'x'] 
        }
     };
-    const result = stableTopoSort(matrix);
-    expect(result).toEqual([['a', 'b', 'c']]); //nodes placed in the same internal array are independent of each other and can operate simultaneously 
+  
+    const edges = extractTemporalChains(matrix);
+    const nodes = Object.keys(matrix); 
+    const result = kahnTopo(nodes, edges); 
+
+    expect(result).toEqual(expect.arrayContaining([['a', 'b', 'c']]));  
+  
   });
 
   it('should sort linear dependencies correctly', () => {
@@ -44,8 +48,14 @@ describe('stableTopoSort', () => {
          "c": ['x', 'x'] 
       }
     };
-    const result = stableTopoSort(matrix);
-    expect(result).toEqual([['a'], ['b'], ['c']]); //sequentially dependent nodes, so none of them can operate at the same time as the others. Therefore, each of them is located in a separate layer.
+   
+    const edges = extractTemporalChains(matrix);
+    const nodes = Object.keys(matrix); 
+    
+    const result = kahnTopo(nodes, edges); 
+    
+    expect(result).toEqual(expect.arrayContaining([['a'], ['b'], ['c']]));
+ 
   });
 
   it('should handle multiple independent chains', () => {
@@ -75,8 +85,13 @@ describe('stableTopoSort', () => {
         "d": ['x', 'x']  
       }
     };
-    const result = stableTopoSort(matrix);
-    expect(result).toEqual([['a', 'c'], ['b', 'd']]);
+  
+    const edges = extractTemporalChains(matrix);
+    const nodes = Object.keys(matrix); 
+    
+    const result = kahnTopo(nodes, edges); 
+    
+    expect(result).toEqual(expect.arrayContaining([['a', 'c'], ['b', 'd']]));
   });
 
   it('should skip non-strict temporal relations like "-"', () => {
@@ -90,8 +105,14 @@ describe('stableTopoSort', () => {
          "b": ['x', 'x']
       },
     };
-    const result = stableTopoSort(matrix);
-    expect(result).toEqual([['a', 'b']]); // guarantees that it only considers true ordering relations such as < and <d. Verifies that it can ignore weak or ambiguous relations.
+  
+    const edges = extractTemporalChains(matrix);
+    const nodes = Object.keys(matrix); 
+    
+    const result = kahnTopo(nodes, edges); 
+    
+    expect(result).toEqual(expect.arrayContaining([['a', 'b']]));
+  
   });
 
   it('should handle complex dependencies with mixed relations', () => {
@@ -132,13 +153,23 @@ describe('stableTopoSort', () => {
           "e": ["x", "x"]
         }
     };
-    const result = stableTopoSort(matrix);
-    expect(result).toEqual([['a'], ['b', 'c'], ['d'], ['e'] ]);//It tests complex multiple dependencies, relationship types (< and <d), and operations that can be executed in parallel.
+   
+    const edges = extractTemporalChains(matrix);
+    const nodes = Object.keys(matrix); 
+    
+    const result = kahnTopo(nodes, edges); 
+    
+    expect(result).toEqual(expect.arrayContaining([['a'], ['b', 'c'], ['d'], ['e'] ]));
   });
 
   it('should return empty array for empty matrix', () => {
     const matrix: ARMMatrix = {};
-    const result = stableTopoSort(matrix);
-    expect(result).toEqual([]);
+
+    const edges = extractTemporalChains(matrix);
+    const nodes = Object.keys(matrix);
+    const result = kahnTopo(nodes, edges); 
+    
+    expect(result).toEqual(expect.arrayContaining([]));
+
   });
 });

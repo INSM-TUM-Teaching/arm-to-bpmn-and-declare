@@ -34,6 +34,7 @@
     "c": ["-", "⇎"],
     "d": [">d", "⇒"],
     "e": ["x", "x"]
-  }
+  },
+  "_comment": "ARM input includes 2 XOR gateways / Examples_BPMN_ARM model 1"
 }
 

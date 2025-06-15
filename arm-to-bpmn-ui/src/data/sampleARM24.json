@@ -1,0 +1,12 @@
+{
+  "a": {
+    "a": ["x", "x"],
+    "b": ["<", "⇐"]
+
+  },
+  "b": {
+    "a": [">", "⇒"],
+    "b": ["x", "x"]
+  },
+  "_comment": "ARM input includes no gateways / example 1 from Pelin's notes"
+}

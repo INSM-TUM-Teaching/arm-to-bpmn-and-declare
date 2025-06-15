@@ -1,0 +1,13 @@
+{
+  "a": {
+    "a": ["x", "x"],
+    "b": ["<d", "⇔"]
+  },
+  "b": {
+    "a": [">d", "⇔"],
+    "b": ["x", "x"]
+  },
+  "_comment": "ARM input includes no gateways / Example_1_BPMN_Matrix"
+}
+
+

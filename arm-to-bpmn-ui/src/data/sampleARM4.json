@@ -33,5 +33,6 @@
     "c": ["-", "⇒"],
     "d": ["<", "⇒"],
     "e": ["x", "x"]
-  }
+  },
+  "_comment": "ARM input includes 2 parallel gateways and 2 XOR gateways / Examples_BPMN_ARM model 5"
 }
