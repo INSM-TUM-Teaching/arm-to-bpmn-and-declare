@@ -74,33 +74,33 @@ const sampleARM2: ARMMatrix = {
 }
 
 
-//simple parallel example
-// const sampleARM: ARMMatrix = {
-//   "a": {
-//     "a": ["x", "x"],
-//     "b": ["<", "⇔"],
-//     "c": ["<", "⇔"],
-//     "d": ["<", "⇔"]
-//   },
-//   "b": {
-//     "a": [">", "⇔"],
-//     "b": ["x", "x"],
-//     "c": ["-", "⇔"],
-//     "d": ["<", "⇔"]
-//   },
-//   "c": {
-//     "a": [">", "⇔"],
-//     "b": ["-", "⇔"],
-//     "c": ["x", "x"],
-//     "d": ["<", "⇔"]
-//   },
-//   "d": {
-//     "a": [">", "⇔"],
-//     "b": [">", "⇔"],
-//     "c": [">", "⇔"],
-//     "d": ["x", "x"]
-//   }
-// };
+// simple parallel example
+const sampleARM: ARMMatrix = {
+  "a": {
+    "a": ["x", "x"],
+    "b": ["<", "⇔"],
+    "c": ["<", "⇔"],
+    "d": ["<", "⇔"]
+  },
+  "b": {
+    "a": [">", "⇔"],
+    "b": ["x", "x"],
+    "c": ["-", "⇔"],
+    "d": ["<", "⇔"]
+  },
+  "c": {
+    "a": [">", "⇔"],
+    "b": ["-", "⇔"],
+    "c": ["x", "x"],
+    "d": ["<", "⇔"]
+  },
+  "d": {
+    "a": [">", "⇔"],
+    "b": [">", "⇔"],
+    "c": [">", "⇔"],
+    "d": ["x", "x"]
+  }
+};
 
 
 
@@ -130,7 +130,7 @@ function App() {
   }, [bpmnXml]);
 
   const testLogicFunctions = async () => {
-    const rawAnalysis = buildBPMNModelWithAnalysis(sampleARM3);
+    const rawAnalysis = buildBPMNModelWithAnalysis(sampleARM);
 
     const analysis = {
       activities: rawAnalysis.topoOrder,

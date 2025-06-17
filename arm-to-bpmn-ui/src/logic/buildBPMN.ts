@@ -158,19 +158,22 @@ export async function buildBPMN(analysis: Analysis): Promise<string> {
       } else {
         // If not exclusive, check for parallel
         console.log("parallel", analysis.parallelRelations)
-        const isParallel = filteredTargets.some((t1, i) =>
-          filteredTargets.slice(i + 1).some(t2 =>
-            analysis.parallelRelations.some(
-              ([x, y]) =>
+        // 修正：檢查當前活動是否需要平行分叉
+        // 如果目標活動可以同時執行（不互斥），則使用平行閘道
+        const hasParallelTargets = filteredTargets.length > 1 && 
+          !filteredTargets.some((t1, i) =>
+            filteredTargets.slice(i + 1).some(t2 =>
+              analysis.exclusiveRelations.some(([x, y]) =>
                 (x === t1 && y === t2) || (x === t2 && y === t1)
+              )
             )
-          )
-        );
+          );
 
-        if (isParallel) {
+        if (hasParallelTargets) {
+          console.log(`Creating parallel gateway from ${activity} to [${filteredTargets.join(', ')}]`);
           createSplitGateway(activity, filteredTargets, 'parallelGateway');
         } else {
-          // Otherwise, connect all normally (e.g., if relationships are unclear)
+          // 否則建立普通的序列流
           for (const to of filteredTargets) {
             const key = `${activity}->${to}`;
             if (!handledPairs.has(key)) {
