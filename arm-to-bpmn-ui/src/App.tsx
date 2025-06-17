@@ -7,8 +7,9 @@ import BpmnViewer from 'bpmn-js/lib/NavigatedViewer';
 
 
 
-//Sample with 3 gateways
-/*const sampleARM: ARMMatrix = {
+//Sample with 3 gateways **Edited after kerstin feedback
+//does not add a join gateway after xclusive gateway
+const sampleARM3: ARMMatrix = {
   a: {
     a: ["x", "x"],
     b: ["<d", "⇐"],
@@ -35,18 +36,17 @@ import BpmnViewer from 'bpmn-js/lib/NavigatedViewer';
     b: [">", "⇐"],
     c: [">d", "⇐"],
     d: ["x", "x"],
-    e: ["<d", "⇐"]
+    e: [">d", "⇐"]
   },
   e: {
     a: [">d", "⇒"],
     b: ["-", "⇎"],
     c: ["-", "⇎"],
-    d: [">d", "⇒"],
+    d: ["<d", "⇒"],
     e: ["x", "x"]
   }
 };
 
-*/
 
 //very simple example with no gateways
 
@@ -113,6 +113,8 @@ function App() {
   const [topoOrder, setTopoOrder] = useState<string[]>([]);
   const [bpmnXml, setBpmnXml] = useState<string>("");
   const viewerRef = useRef<HTMLDivElement>(null);
+  const [armMatrix, setArmMatrix] = useState<ARMMatrix | null>(null);
+
   //  const sampleARM = sampleARMJson as unknown as ARMMatrix;
 
   useEffect(() => {
@@ -128,7 +130,7 @@ function App() {
   }, [bpmnXml]);
 
   const testLogicFunctions = async () => {
-    const rawAnalysis = buildBPMNModelWithAnalysis(sampleARM2);
+    const rawAnalysis = buildBPMNModelWithAnalysis(sampleARM3);
 
     const analysis = {
       activities: rawAnalysis.topoOrder,
