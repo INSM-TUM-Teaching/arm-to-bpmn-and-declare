@@ -25,6 +25,43 @@ export async function buildBPMN(analysis: Analysis): Promise<string> {
     elements.set(activity, { type: 'task', name: activity });
   }
 
+
+      // helper function that returns the first common reachable node from all given sources using temporalChains
+  function findConvergingNode(sources: string[], chains: [string, string][]): string | null {
+    const getReachables = (start: string): Set<string> => {
+      const visited = new Set<string>();
+      const stack = [start];
+      while (stack.length) {
+        const node = stack.pop()!;
+        for (const [from, to] of chains) {
+          if (from === node && !visited.has(to)) {
+            visited.add(to);
+            stack.push(to);
+          }
+        }
+      }
+      return visited;
+    };
+
+    const reachSets = sources.map(getReachables);
+    const common = reachSets.reduce((acc, set) => {
+      return new Set([...acc].filter(x => set.has(x)));
+    });
+
+    return [...common][0] ?? null;
+  }
+  //end of helper function
+
+  function findLastNodeBefore(target: string, start: string, chains: [string, string][]): string | null {
+    let current = start;
+    while (true) {
+      const next = chains.find(([a]) => a === current)?.[1];
+      if (!next || next === target) break;
+      current = next;
+    }
+    return current === target ? null : current;
+  }
+
   /**
    * Helper: Insert split + join gateways (exclusive or parallel)
    * - Adds a gateway from the source to each target
@@ -42,14 +79,13 @@ export async function buildBPMN(analysis: Analysis): Promise<string> {
       handledPairs.add(`${from}->${to}`);
     }
 
-    // Optional: add join gateway if all targets lead to the same next activity
-    const nextHops = targets.map(source =>
-      analysis.temporalChains.find(([a, b]) => a === source)?.[1]
-    );
 
+    // OLD logic (optional): immediate convergence
+    const nextHops = targets.map(source => analysis.temporalChains.find(([a, b]) => a === source)?.[1]);
     const uniqueHops = Array.from(new Set(nextHops.filter(Boolean)));
 
     if (uniqueHops.length === 1) {
+      console.log("uniqueHops", uniqueHops)
       const joinTarget = uniqueHops[0]!;
       const joinId = `${type}_Join_${joinTarget}`;
       elements.set(joinId, { type, name: type.includes('exclusive') ? 'XOR Join' : 'AND Join' });
@@ -61,6 +97,25 @@ export async function buildBPMN(analysis: Analysis): Promise<string> {
       }
 
       flows.push({ from: joinId, to: joinTarget });
+      
+    } else {
+            console.log("uniqueHops", "no else")
+      // neW logic: check eventual convergence
+      const convergeAt = findConvergingNode(targets, analysis.temporalChains);
+      if (convergeAt) {
+        const joinId = `${type}_Join_${convergeAt}`;
+        elements.set(joinId, { type, name: type.includes('exclusive') ? 'XOR Join' : 'AND Join' });
+        gateways.add(joinId);
+
+        for (const source of targets) {
+          const lastBefore = findLastNodeBefore(convergeAt, source, analysis.temporalChains);
+          if (!lastBefore) continue;
+          flows.push({ from: lastBefore, to: joinId });
+          handledPairs.add(`${lastBefore}->${convergeAt}`);
+        }
+
+        flows.push({ from: joinId, to: convergeAt });
+      }
     }
   }
 
