@@ -4,7 +4,8 @@ import {
   extractTemporalChains,
   detectExclusiveRelations,
   detectParallelRelations,
-  detectOptionalDependencies
+  detectOptionalDependencies,
+  extractDirectTemporal
 } from './translateARM';
 
 import type { ARMMatrix } from './translateARM';
@@ -44,6 +45,8 @@ export function buildBPMNModelWithAnalysis(matrix: ARMMatrix) {
   const parallel = detectParallelRelations(matrix);
   const optional = detectOptionalDependencies(matrix);
 
+  const directChains = extractDirectTemporal(matrix);
+
   // Return all computed relations and orderings for downstream use
   return {
     chains,
@@ -51,6 +54,7 @@ export function buildBPMNModelWithAnalysis(matrix: ARMMatrix) {
     indexMap,
     exclusive,
     parallel,
+    directChains,
     optional
   };
 }

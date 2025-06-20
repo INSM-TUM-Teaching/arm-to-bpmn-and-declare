@@ -1,26 +1,120 @@
 import { useEffect, useState, useRef } from 'react';
 import type { ARMMatrix } from './logic/translateARM';
-import { generateBPMNXmlFromARM } from './logic/buildBPMN';
+import { buildBPMN } from './logic/buildBPMN';
 import { buildBPMNModelWithAnalysis } from './logic/buildBPMNModelWithAnalysis';
 import BpmnViewer from 'bpmn-js/lib/NavigatedViewer';
 //import sampleARMJson from './data/sampleARM1.json';
 
-// Sample ARM matrix (can be replaced by user input later)
-const sampleARM: ARMMatrix = {
+
+
+//Sample with 3 gateways **Edited after kerstin feedback
+//does not add a join gateway after xclusive gateway
+const sampleARM3: ARMMatrix = {
+  a: {
+    a: ["x", "x"],
+    b: ["<d", "⇐"],
+    c: ["<", "⇐"],
+    d: ["<", "⇔"],
+    e: ["<d", "⇐"]
+  },
+  b: {
+    a: [">d", "⇒"],
+    b: ["x", "x"],
+    c: ["<d", "⇔"],
+    d: ["<", "⇒"],
+    e: ["-", "⇎"]
+  },
+  c: {
+    a: [">", "⇒"],
+    b: [">d", "⇔"],
+    c: ["x", "x"],
+    d: ["<d", "⇒"],
+    e: ["-", "⇎"]
+  },
+  d: {
+    a: [">", "⇔"],
+    b: [">", "⇐"],
+    c: [">d", "⇐"],
+    d: ["x", "x"],
+    e: [">d", "⇐"]
+  },
+  e: {
+    a: [">d", "⇒"],
+    b: ["-", "⇎"],
+    c: ["-", "⇎"],
+    d: ["<d", "⇒"],
+    e: ["x", "x"]
+  }
+};
+
+
+//very simple example with no gateways
+
+const sampleARM0: ARMMatrix = {
+  a: { a:["x","x"], b: ["<d","⇔"]},
+  b: { a:[">d","⇔"], b:["x","x"]}
+}
+
+
+//simple exxclusive gateway example
+const sampleARM1: ARMMatrix = {
   a: { a: ["x", "x"], b: ["<d", "⇐"], c: ["<d", "⇐"], d: ["<", "⇔"] },
   b: { a: [">d", "⇒"], b: ["x", "x"], c: ["-", "⇎"], d: ["<d", "⇒"] },
   c: { a: [">d", "⇒"], b: ["-", "⇎"], c: ["x", "x"], d: ["<d", "⇒"] },
   d: { a: [">", "⇔"], b: [">d", "⇐"], c: [">d", "⇐"], d: ["x", "x"] },
+}; 
+
+//simple exclusive gateway sample 2 with more activites 
+const sampleARM2: ARMMatrix = {
+  a: { a: ["x", "x"], b: ["<d", "⇔"], c: ["<", "⇐"], d: ["<", "⇐"],e: ["<", "⇔"] },
+  b: { a: [">d", "⇔"], b: ["x", "x"], c: ["<d", "⇐"], d: ["<d", "⇐"], e: ["<", "⇔"] },
+  c: { a: [">", "⇒"], b: [">d", "⇒"], c: ["x", "x"], d: ["-", "⇎"],e: ["<d", "⇒"] },
+  d: { a: [">", "⇒"], b: [">d", "⇒"], c: ["-", "⇎"], d: ["x", "x"],e: ["<d", "⇒"] },
+  e: { a: [">", "⇔"], b: [">", "⇔"], c: [">d", "⇐"], d: [">d", "⇐"], e: ["x", "x"] } ,
+}
+
+
+// simple parallel example
+const sampleARM: ARMMatrix = {
+  "a": {
+    "a": ["x", "x"],
+    "b": ["<", "⇔"],
+    "c": ["<", "⇔"],
+    "d": ["<", "⇔"]
+  },
+  "b": {
+    "a": [">", "⇔"],
+    "b": ["x", "x"],
+    "c": ["-", "⇔"],
+    "d": ["<", "⇔"]
+  },
+  "c": {
+    "a": [">", "⇔"],
+    "b": ["-", "⇔"],
+    "c": ["x", "x"],
+    "d": ["<", "⇔"]
+  },
+  "d": {
+    "a": [">", "⇔"],
+    "b": [">", "⇔"],
+    "c": [">", "⇔"],
+    "d": ["x", "x"]
+  }
 };
+
+
 
 function App() {
   const [temporalChains, setTemporalChains] = useState<string[][]>([]);
   const [exclusiveRelations, setExclusiveRelations] = useState<[string, string][]>([]);
   const [parallelRelations, setParallelRelations] = useState<[string, string][]>([]);
+  const [directTemporalChains, setDirectTemporalChains] = useState<[string, string][]>([]);
   const [optionalDependencies, setOptionalDependencies] = useState<[string, string][]>([]);
   const [topoOrder, setTopoOrder] = useState<string[]>([]);
   const [bpmnXml, setBpmnXml] = useState<string>("");
   const viewerRef = useRef<HTMLDivElement>(null);
+  const [armMatrix, setArmMatrix] = useState<ARMMatrix | null>(null);
+
   //  const sampleARM = sampleARMJson as unknown as ARMMatrix;
 
   useEffect(() => {
@@ -36,14 +130,31 @@ function App() {
   }, [bpmnXml]);
 
   const testLogicFunctions = async () => {
-    const analysis = buildBPMNModelWithAnalysis(sampleARM);
-    const xml = await generateBPMNXmlFromARM(sampleARM);
-    setTemporalChains(analysis.chains);
-    setExclusiveRelations(analysis.exclusive);
-    setParallelRelations(analysis.parallel);
-    setOptionalDependencies(analysis.optional.map(([a, b]) => [a, b]));
-    setTopoOrder(analysis.topoOrder);
+    const rawAnalysis = buildBPMNModelWithAnalysis(sampleARM);
+
+    const analysis = {
+      activities: rawAnalysis.topoOrder,
+      temporalChains: rawAnalysis.chains,
+      exclusiveRelations: rawAnalysis.exclusive,
+      parallelRelations: rawAnalysis.parallel,
+      optionalDependencies: rawAnalysis.optional,
+      directDependencies: rawAnalysis.directChains,
+      topoOrder: rawAnalysis.topoOrder,
+    };
+
+
+    // 2. Build BPMN XML from analysis
+    const xml = await buildBPMN(analysis);
+
+    // 3. Set BPMN XML in state
     setBpmnXml(xml);
+
+    setTemporalChains(rawAnalysis.chains);
+    setExclusiveRelations(rawAnalysis.exclusive);
+    setParallelRelations(rawAnalysis.parallel);
+    setDirectTemporalChains(rawAnalysis.directChains);
+    setOptionalDependencies(rawAnalysis.optional.map(([a, b]) => [a, b]));
+    setTopoOrder(rawAnalysis.topoOrder);
   };
 
   return (
@@ -79,23 +190,27 @@ function App() {
           <h2 className="text-xl font-semibold mb-4">Logic Analysis Output</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div>
-              <h3 className="font-medium text-gray-800 mb-1">🔗 Temporal Chains</h3>
+              <h3 className="font-medium text-gray-800 mb-1">Temporal Chains</h3>
               <ul className="text-sm text-gray-700 space-y-1">{temporalChains.map((chain, idx) => <li key={idx}>{chain.join(" → ")}</li>)}</ul>
             </div>
             <div>
-              <h3 className="font-medium text-gray-800 mb-1">❗ Exclusive Relations</h3>
-              <ul className="text-sm text-gray-700 space-y-1">{exclusiveRelations.map(([a, b], i) => <li key={i}>{a} ⊕ {b}</li>)}</ul>
+              <h3 className="font-medium text-gray-800 mb-1">Exclusive Relations X</h3>
+              <ul className="text-sm text-gray-700 space-y-1">{exclusiveRelations.map(([a, b], i) => <li key={i}>{a} x {b}</li>)}</ul>
             </div>
             <div>
-              <h3 className="font-medium text-gray-800 mb-1">⏸️ Parallel Relations</h3>
-              <ul className="text-sm text-gray-700 space-y-1">{parallelRelations.map(([a, b], i) => <li key={i}>{a} || {b}</li>)}</ul>
+              <h3 className="font-medium text-gray-800 mb-1">Parallel Relations + </h3>
+              <ul className="text-sm text-gray-700 space-y-1">{parallelRelations.map(([a, b], i) => <li key={i}>{a} + {b}</li>)}</ul>
             </div>
             <div>
-              <h3 className="font-medium text-gray-800 mb-1">❔ Optional Dependencies</h3>
+              <h3 className="font-medium text-gray-800 mb-1">Direct Temporal Dependencies</h3>
+              <ul className="text-sm text-gray-700 space-y-1">{directTemporalChains.map(([a, b], i) => <li key={i}>{a} → {b}</li>)}</ul>
+            </div>
+            <div>
+              <h3 className="font-medium text-gray-800 mb-1">Optional Dependencies</h3>
               <ul className="text-sm text-gray-700 space-y-1">{optionalDependencies.map(([a, b], i) => <li key={i}>{a} ?→ {b}</li>)}</ul>
             </div>
             <div>
-              <h3 className="font-medium text-gray-800 mb-1">🔼 Topological Order</h3>
+              <h3 className="font-medium text-gray-800 mb-1">Topological Order</h3>
               <ul className="text-sm text-gray-700 space-y-1">{topoOrder.map((node, i) => <li key={i}>{i + 1}. {node}</li>)}</ul>
             </div>
           </div>

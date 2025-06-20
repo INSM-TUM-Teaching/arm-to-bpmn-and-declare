@@ -105,11 +105,9 @@ export function detectExclusiveRelations(matrix: ARMMatrix): Array<[string, stri
 /**
  * Detects parallel activity pairs from the ARM matrix.
  * Two activities are considered parallel if:
- * - They are not exclusive (no ⇎, ∨, or ¬ relation).
- * - They are temporally independent ("-" relation).
- * - They both have a strict temporal dependency (<d) to a common successor.
- * 
- * Returns all such pairs [a, b] where a || b (can execute in parallel before merging).
+ * - Both have no direct temporal dependency on each other (both directions are "-")
+ * - They are not exclusive or logically constrained
+ * - They have a common predecessor or successor (indicating they can split/merge)
  */
 export function detectParallelRelations(matrix: ARMMatrix): Array<[string, string]> {
   const parallelPairs: Array<[string, string]> = [];
@@ -120,28 +118,42 @@ export function detectParallelRelations(matrix: ARMMatrix): Array<[string, strin
       const a = activities[i];
       const b = activities[j];
 
-      const t1 = matrix[a]?.[b]?.[0];
-      const t2 = matrix[b]?.[a]?.[0];
-      const e1 = matrix[a]?.[b]?.[1];
-      const e2 = matrix[b]?.[a]?.[1];
+      // Extract relations between a and b
+      const [ta, ea] = matrix[a]?.[b] ?? ["-", "-"];
+      const [tb, eb] = matrix[b]?.[a] ?? ["-", "-"];
 
-      const aTargets = Object.entries(matrix[a] || {})
-        .filter(([_, [t]]) => t === "<d")
-        .map(([target]) => target);
+      // Check if both activities have no temporal dependency on each other
+      const noTemporalDependency = ta === "-" && tb === "-";
+      
+      // Check if they are not exclusive
+      const notExclusive = !["⇎", "∨", "¬"].includes(ea) && !["⇎", "∨", "¬"].includes(eb);
 
-      const bTargets = Object.entries(matrix[b] || {})
-        .filter(([_, [t]]) => t === "<d")
-        .map(([target]) => target);
+      if (noTemporalDependency && notExclusive) {
+        // Check if they have common predecessors or successors (indicating split/merge pattern)
+        const hasCommonPredecessor = activities.some(pred => {
+          const predToA = matrix[pred]?.[a]?.[0];
+          const predToB = matrix[pred]?.[b]?.[0];
+          return (predToA === "<" || predToA === "<d") && (predToB === "<" || predToB === "<d");
+        });
 
-      const commonTarget = aTargets.find(t => bTargets.includes(t));
+        const hasCommonSuccessor = activities.some(succ => {
+          const aToSucc = matrix[a]?.[succ]?.[0];
+          const bToSucc = matrix[b]?.[succ]?.[0];
+          return (aToSucc === "<" || aToSucc === "<d") && (bToSucc === "<" || bToSucc === "<d");
+        });
 
-      if (
-        commonTarget &&
-        (t1 === "-" || t2 === "-") &&
-        !["⇎", "∨", "¬"].includes(e1) &&
-        !["⇎", "∨", "¬"].includes(e2)
-      ) {
-        parallelPairs.push([a, b]);
+        // Only consider parallel if they have common predecessor or successor
+        if (hasCommonPredecessor || hasCommonSuccessor) {
+          console.log(
+            "Detected parallel:",
+            a,
+            b,
+            "→",
+            matrix[a]?.[b] ?? "no entry",
+            matrix[b]?.[a] ?? "no entry"
+          );
+          parallelPairs.push([a, b]);
+        }
       }
     }
   }
@@ -163,4 +175,18 @@ export function detectOptionalDependencies(matrix: ARMMatrix): Array<[string, st
     }
   }
   return optionals;
+}
+
+
+export function extractDirectTemporal(matrix: ARMMatrix): Array<[string, string]> {
+  const directTemporalChains: Array<[string, string]> = [];
+  for (const from in matrix) {
+    for (const to in matrix[from]) {
+      const [temp] = matrix[from][to];
+      if (temp === "<d") {
+        directTemporalChains.push([from, to]);
+      }
+    }
+  }
+   return directTemporalChains;
 }
