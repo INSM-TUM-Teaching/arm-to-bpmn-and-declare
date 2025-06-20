@@ -10,42 +10,12 @@ import BpmnViewer from 'bpmn-js/lib/NavigatedViewer';
 //Sample with 3 gateways **Edited after kerstin feedback
 //does not add a join gateway after xclusive gateway
 const sampleARM3: ARMMatrix = {
-  a: {
-    a: ["x", "x"],
-    b: ["<d", "⇐"],
-    c: ["<", "⇐"],
-    d: ["<", "⇔"],
-    e: ["<d", "⇐"]
-  },
-  b: {
-    a: [">d", "⇒"],
-    b: ["x", "x"],
-    c: ["<d", "⇔"],
-    d: ["<", "⇒"],
-    e: ["-", "⇎"]
-  },
-  c: {
-    a: [">", "⇒"],
-    b: [">d", "⇔"],
-    c: ["x", "x"],
-    d: ["<d", "⇒"],
-    e: ["-", "⇎"]
-  },
-  d: {
-    a: [">", "⇔"],
-    b: [">", "⇐"],
-    c: [">d", "⇐"],
-    d: ["x", "x"],
-    e: [">d", "⇐"]
-  },
-  e: {
-    a: [">d", "⇒"],
-    b: ["-", "⇎"],
-    c: ["-", "⇎"],
-    d: ["<d", "⇒"],
-    e: ["x", "x"]
-  }
-};
+  a: { a: ["x", "x"], b: ["<d", "⇐"], c: ["<", "⇐"], d: ["<", "⇔"], e: ["<d", "⇐"] },
+  b: { a: [">d", "⇒"], b: ["x", "x"], c: ["<d", "⇔"], d: ["<", "⇒"], e: ["-", "⇎"] },
+  c: { a: [">", "⇒"], b: [">d", "⇔"], c: ["x", "x"], d: ["<d", "⇒"], e: ["-", "⇎"] },
+  d: { a: [">", "⇔"], b: [">", "⇐"], c: [">d", "⇐"], d: ["x", "x"], e: [">d", "⇐"] },
+  e: { a: [">d", "⇒"], b: ["-", "⇎"], c: ["-", "⇎"], d: ["<d", "⇒"], e: ["x", "x"]}
+};  
 
 
 //very simple example with no gateways
@@ -73,35 +43,41 @@ const sampleARM2: ARMMatrix = {
   e: { a: [">", "⇔"], b: [">", "⇔"], c: [">d", "⇐"], d: [">d", "⇐"], e: ["x", "x"] } ,
 }
 
-/*
+const sampleARM5: ARMMatrix = {
+    a: { a: ["x", "x"], b: [">", "⇐"], c: ["-", "⇔"], d: ["<", "⇔"],e: [">", "⇐"] },
+    b: { a: ["<", "⇒"], b: ["x", "x"], c: ["-", "⇒"], d: ["<", "⇒"], e: ["-", "⇎"] },
+    c: { a: ["-", "⇔"], b: ["-", "⇐"], c: ["x", "x"], d: ["<", "⇔"], e: ["-", "⇐"] },
+    d: { a: [">", "⇔"], b: [">", "⇐"], c: [">", "⇔"], d: ["x", "x"], e: [">", "⇐"] },
+    e: { a: ["<", "⇒"], b: ["-", "⇎"], c: ["-", "⇒"], d: ["<", "⇒"], e: ["x", "x"] },
+}
+
+//simple exclusive example with 3 activites/branches
+const sampleARM6: ARMMatrix = {
+  "a": { "a": ["x", "x"], "b": ["<d", "⇐"], "c": ["<d", "⇐"], "d": ["<d", "⇐"], "e": ["<", "⇔"] },
+  "b": { "a": [">d", "⇒"], "b": ["x", "x"],  "c": ["-", "⇎"], "d": ["-", "⇎"], "e": ["<d", "⇒"] }, 
+  "c": { "a": [">d", "⇒"], "b": ["-", "⇎"],  "c": ["x", "x"], "d": ["-", "⇎"], "e": ["<d", "⇒"] },
+  "d": { "a": [">d", "⇒"], "b": ["-", "⇎"],  "c": ["-", "⇎"], "d": ["x", "x"], "e": ["<d", "⇒"] },
+  "e": { "a": [">", "⇔"], "b": [">d", "⇐"],  "c": [">d", "⇐"], "d": [">d", "⇐"], "e": ["x", "x"] }
+}
+
 //simple parallel example
 const sampleARM: ARMMatrix = {
-  "a": {
-    "a": ["x", "x"],
-    "b": ["<", "⇔"],
-    "c": ["<", "⇔"],
-    "d": ["<", "⇔"]
-  },
-  "b": {
-    "a": [">", "⇔"],
-    "b": ["x", "x"],
-    "c": ["-", "⇔"],
-    "d": ["<", "⇔"]
-  },
-  "c": {
-    "a": [">", "⇔"],
-    "b": ["-", "⇔"],
-    "c": ["x", "x"],
-    "d": ["<", "⇔"]
-  },
-  "d": {
-    "a": [">", "⇔"],
-    "b": [">", "⇔"],
-    "c": [">", "⇔"],
-    "d": ["x", "x"]
-  }
+  "a": { "a": ["x", "x"], "b": ["<", "⇔"],"c": ["<", "⇔"], "d": ["<", "⇔"]},
+  "b": { "a": [">", "⇔"], "b": ["x", "x"], "c": ["-", "⇔"], "d": ["<", "⇔"]},
+  "c": { "a": [">", "⇔"], "b": ["-", "⇔"], "c": ["x", "x"], "d": ["<", "⇔"]},
+  "d": { "a": [">", "⇔"], "b": [">", "⇔"], "c": [">", "⇔"], "d": ["x", "x"]}
 };
-*/
+
+//simple parallel example
+const sampleARM4: ARMMatrix = {
+  "a": { "a": ["x", "x"], "b": ["<", "⇔"],"c": ["<", "⇔"], "d": ["-", "∨"]},
+  "b": { "a": [">", "⇔"], "b": ["x", "x"], "c": ["-", "⇔"], "d": ["-", "∨"]},
+  "c": { "a": [">", "⇔"], "b": ["-", "⇔"], "c": ["x", "x"], "d": ["-", "∨"]},
+  "d": { "a": ["-", "∨"], "b": ["-", "∨"], "c": ["-", "∨"], "d": ["x", "x"]}
+};
+
+
+
 
 
 function App() {
@@ -110,6 +86,7 @@ function App() {
   const [parallelRelations, setParallelRelations] = useState<[string, string][]>([]);
   const [directTemporalChains, setDirectTemporalChains] = useState<[string, string][]>([]);
   const [optionalDependencies, setOptionalDependencies] = useState<[string, string][]>([]);
+  const [orRelations, setOrRelations] = useState<[string, string][]>([]);
   const [topoOrder, setTopoOrder] = useState<string[]>([]);
   const [bpmnXml, setBpmnXml] = useState<string>("");
   const viewerRef = useRef<HTMLDivElement>(null);
@@ -130,7 +107,7 @@ function App() {
   }, [bpmnXml]);
 
   const testLogicFunctions = async () => {
-    const rawAnalysis = buildBPMNModelWithAnalysis(sampleARM3);
+    const rawAnalysis = buildBPMNModelWithAnalysis(sampleARM4);
 
     const analysis = {
       activities: rawAnalysis.topoOrder,
@@ -140,6 +117,7 @@ function App() {
       optionalDependencies: rawAnalysis.optional,
       directDependencies: rawAnalysis.directChains,
       topoOrder: rawAnalysis.topoOrder,
+      orRelations: rawAnalysis.orRelations,
     };
 
 
@@ -155,6 +133,7 @@ function App() {
     setDirectTemporalChains(rawAnalysis.directChains);
     setOptionalDependencies(rawAnalysis.optional.map(([a, b]) => [a, b]));
     setTopoOrder(rawAnalysis.topoOrder);
+    setOrRelations(rawAnalysis.orRelations);
   };
 
   return (
@@ -204,6 +183,10 @@ function App() {
             <div>
               <h3 className="font-medium text-gray-800 mb-1">Direct Temporal Dependencies</h3>
               <ul className="text-sm text-gray-700 space-y-1">{directTemporalChains.map(([a, b], i) => <li key={i}>{a} → {b}</li>)}</ul>
+            </div>
+            <div>
+              <h3 className="font-medium text-gray-800 mb-1">OR Dependencies</h3>
+              <ul className="text-sm text-gray-700 space-y-1">{orRelations.map(([a, b], i) => <li key={i}>{a} v {b}</li>)}</ul>
             </div>
             <div>
               <h3 className="font-medium text-gray-800 mb-1">Optional Dependencies</h3>
