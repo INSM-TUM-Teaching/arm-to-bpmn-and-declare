@@ -9,64 +9,64 @@ import BpmnViewer from 'bpmn-js/lib/NavigatedViewer';
 
 //Sample with 3 gateways **Edited after kerstin feedback
 //does not add a join gateway after xclusive gateway
-const sampleARM3: ARMMatrix = {
-  a: { a: ["x", "x"], b: ["<d", "⇐"], c: ["<", "⇐"], d: ["<", "⇔"], e: ["<d", "⇐"] },
-  b: { a: [">d", "⇒"], b: ["x", "x"], c: ["<d", "⇔"], d: ["<", "⇒"], e: ["-", "⇎"] },
-  c: { a: [">", "⇒"], b: [">d", "⇔"], c: ["x", "x"], d: ["<d", "⇒"], e: ["-", "⇎"] },
-  d: { a: [">", "⇔"], b: [">", "⇐"], c: [">d", "⇐"], d: ["x", "x"], e: [">d", "⇐"] },
-  e: { a: [">d", "⇒"], b: ["-", "⇎"], c: ["-", "⇎"], d: ["<d", "⇒"], e: ["x", "x"]}
-};  
+// const sampleARM3: ARMMatrix = {
+//   a: { a: ["x", "x"], b: ["<d", "⇐"], c: ["<", "⇐"], d: ["<", "⇔"], e: ["<d", "⇐"] },
+//   b: { a: [">d", "⇒"], b: ["x", "x"], c: ["<d", "⇔"], d: ["<", "⇒"], e: ["-", "⇎"] },
+//   c: { a: [">", "⇒"], b: [">d", "⇔"], c: ["x", "x"], d: ["<d", "⇒"], e: ["-", "⇎"] },
+//   d: { a: [">", "⇔"], b: [">", "⇐"], c: [">d", "⇐"], d: ["x", "x"], e: [">d", "⇐"] },
+//   e: { a: [">d", "⇒"], b: ["-", "⇎"], c: ["-", "⇎"], d: ["<d", "⇒"], e: ["x", "x"]}
+// };  
 
 
-//very simple example with no gateways
+// //very simple example with no gateways
 
-const sampleARM0: ARMMatrix = {
-  a: { a:["x","x"], b: ["<d","⇔"]},
-  b: { a:[">d","⇔"], b:["x","x"]}
-}
+// const sampleARM0: ARMMatrix = {
+//   a: { a:["x","x"], b: ["<d","⇔"]},
+//   b: { a:[">d","⇔"], b:["x","x"]}
+// }
 
 
-//simple exxclusive gateway example
-const sampleARM1: ARMMatrix = {
-  a: { a: ["x", "x"], b: ["<d", "⇐"], c: ["<d", "⇐"], d: ["<", "⇔"] },
-  b: { a: [">d", "⇒"], b: ["x", "x"], c: ["-", "⇎"], d: ["<d", "⇒"] },
-  c: { a: [">d", "⇒"], b: ["-", "⇎"], c: ["x", "x"], d: ["<d", "⇒"] },
-  d: { a: [">", "⇔"], b: [">d", "⇐"], c: [">d", "⇐"], d: ["x", "x"] },
-}; 
+// //simple exxclusive gateway example
+// const sampleARM1: ARMMatrix = {
+//   a: { a: ["x", "x"], b: ["<d", "⇐"], c: ["<d", "⇐"], d: ["<", "⇔"] },
+//   b: { a: [">d", "⇒"], b: ["x", "x"], c: ["-", "⇎"], d: ["<d", "⇒"] },
+//   c: { a: [">d", "⇒"], b: ["-", "⇎"], c: ["x", "x"], d: ["<d", "⇒"] },
+//   d: { a: [">", "⇔"], b: [">d", "⇐"], c: [">d", "⇐"], d: ["x", "x"] },
+// }; 
 
-//simple exclusive gateway sample 2 with more activites 
-const sampleARM2: ARMMatrix = {
-  a: { a: ["x", "x"], b: ["<d", "⇔"], c: ["<", "⇐"], d: ["<", "⇐"],e: ["<", "⇔"] },
-  b: { a: [">d", "⇔"], b: ["x", "x"], c: ["<d", "⇐"], d: ["<d", "⇐"], e: ["<", "⇔"] },
-  c: { a: [">", "⇒"], b: [">d", "⇒"], c: ["x", "x"], d: ["-", "⇎"],e: ["<d", "⇒"] },
-  d: { a: [">", "⇒"], b: [">d", "⇒"], c: ["-", "⇎"], d: ["x", "x"],e: ["<d", "⇒"] },
-  e: { a: [">", "⇔"], b: [">", "⇔"], c: [">d", "⇐"], d: [">d", "⇐"], e: ["x", "x"] } ,
-}
+// //simple exclusive gateway sample 2 with more activites 
+// const sampleARM2: ARMMatrix = {
+//   a: { a: ["x", "x"], b: ["<d", "⇔"], c: ["<", "⇐"], d: ["<", "⇐"],e: ["<", "⇔"] },
+//   b: { a: [">d", "⇔"], b: ["x", "x"], c: ["<d", "⇐"], d: ["<d", "⇐"], e: ["<", "⇔"] },
+//   c: { a: [">", "⇒"], b: [">d", "⇒"], c: ["x", "x"], d: ["-", "⇎"],e: ["<d", "⇒"] },
+//   d: { a: [">", "⇒"], b: [">d", "⇒"], c: ["-", "⇎"], d: ["x", "x"],e: ["<d", "⇒"] },
+//   e: { a: [">", "⇔"], b: [">", "⇔"], c: [">d", "⇐"], d: [">d", "⇐"], e: ["x", "x"] } ,
+// }
 
-const sampleARM5: ARMMatrix = {
-    a: { a: ["x", "x"], b: [">", "⇐"], c: ["-", "⇔"], d: ["<", "⇔"],e: [">", "⇐"] },
-    b: { a: ["<", "⇒"], b: ["x", "x"], c: ["-", "⇒"], d: ["<", "⇒"], e: ["-", "⇎"] },
-    c: { a: ["-", "⇔"], b: ["-", "⇐"], c: ["x", "x"], d: ["<", "⇔"], e: ["-", "⇐"] },
-    d: { a: [">", "⇔"], b: [">", "⇐"], c: [">", "⇔"], d: ["x", "x"], e: [">", "⇐"] },
-    e: { a: ["<", "⇒"], b: ["-", "⇎"], c: ["-", "⇒"], d: ["<", "⇒"], e: ["x", "x"] },
-}
+// const sampleARM5: ARMMatrix = {
+//     a: { a: ["x", "x"], b: [">", "⇐"], c: ["-", "⇔"], d: ["<", "⇔"],e: [">", "⇐"] },
+//     b: { a: ["<", "⇒"], b: ["x", "x"], c: ["-", "⇒"], d: ["<", "⇒"], e: ["-", "⇎"] },
+//     c: { a: ["-", "⇔"], b: ["-", "⇐"], c: ["x", "x"], d: ["<", "⇔"], e: ["-", "⇐"] },
+//     d: { a: [">", "⇔"], b: [">", "⇐"], c: [">", "⇔"], d: ["x", "x"], e: [">", "⇐"] },
+//     e: { a: ["<", "⇒"], b: ["-", "⇎"], c: ["-", "⇒"], d: ["<", "⇒"], e: ["x", "x"] },
+// }
 
-//simple exclusive example with 3 activites/branches
-const sampleARM6: ARMMatrix = {
-  "a": { "a": ["x", "x"], "b": ["<d", "⇐"], "c": ["<d", "⇐"], "d": ["<d", "⇐"], "e": ["<", "⇔"] },
-  "b": { "a": [">d", "⇒"], "b": ["x", "x"],  "c": ["-", "⇎"], "d": ["-", "⇎"], "e": ["<d", "⇒"] }, 
-  "c": { "a": [">d", "⇒"], "b": ["-", "⇎"],  "c": ["x", "x"], "d": ["-", "⇎"], "e": ["<d", "⇒"] },
-  "d": { "a": [">d", "⇒"], "b": ["-", "⇎"],  "c": ["-", "⇎"], "d": ["x", "x"], "e": ["<d", "⇒"] },
-  "e": { "a": [">", "⇔"], "b": [">d", "⇐"],  "c": [">d", "⇐"], "d": [">d", "⇐"], "e": ["x", "x"] }
-}
+// //simple exclusive example with 3 activites/branches
+// const sampleARM6: ARMMatrix = {
+//   "a": { "a": ["x", "x"], "b": ["<d", "⇐"], "c": ["<d", "⇐"], "d": ["<d", "⇐"], "e": ["<", "⇔"] },
+//   "b": { "a": [">d", "⇒"], "b": ["x", "x"],  "c": ["-", "⇎"], "d": ["-", "⇎"], "e": ["<d", "⇒"] }, 
+//   "c": { "a": [">d", "⇒"], "b": ["-", "⇎"],  "c": ["x", "x"], "d": ["-", "⇎"], "e": ["<d", "⇒"] },
+//   "d": { "a": [">d", "⇒"], "b": ["-", "⇎"],  "c": ["-", "⇎"], "d": ["x", "x"], "e": ["<d", "⇒"] },
+//   "e": { "a": [">", "⇔"], "b": [">d", "⇐"],  "c": [">d", "⇐"], "d": [">d", "⇐"], "e": ["x", "x"] }
+// }
 
-//simple parallel example
-const sampleARM: ARMMatrix = {
-  "a": { "a": ["x", "x"], "b": ["<", "⇔"],"c": ["<", "⇔"], "d": ["<", "⇔"]},
-  "b": { "a": [">", "⇔"], "b": ["x", "x"], "c": ["-", "⇔"], "d": ["<", "⇔"]},
-  "c": { "a": [">", "⇔"], "b": ["-", "⇔"], "c": ["x", "x"], "d": ["<", "⇔"]},
-  "d": { "a": [">", "⇔"], "b": [">", "⇔"], "c": [">", "⇔"], "d": ["x", "x"]}
-};
+// //simple parallel example
+// const sampleARM: ARMMatrix = {
+//   "a": { "a": ["x", "x"], "b": ["<", "⇔"],"c": ["<", "⇔"], "d": ["<", "⇔"]},
+//   "b": { "a": [">", "⇔"], "b": ["x", "x"], "c": ["-", "⇔"], "d": ["<", "⇔"]},
+//   "c": { "a": [">", "⇔"], "b": ["-", "⇔"], "c": ["x", "x"], "d": ["<", "⇔"]},
+//   "d": { "a": [">", "⇔"], "b": [">", "⇔"], "c": [">", "⇔"], "d": ["x", "x"]}
+// };
 
 //simple parallel example
 const sampleARM4: ARMMatrix = {
@@ -91,7 +91,7 @@ function App() {
   const [topoOrder, setTopoOrder] = useState<string[]>([]);
   const [bpmnXml, setBpmnXml] = useState<string>("");
   const viewerRef = useRef<HTMLDivElement>(null);
-  const [armMatrix, setArmMatrix] = useState<ARMMatrix | null>(null);
+  // const [armMatrix, setArmMatrix] = useState<ARMMatrix | null>(null);
 
   //  const sampleARM = sampleARMJson as unknown as ARMMatrix;
 

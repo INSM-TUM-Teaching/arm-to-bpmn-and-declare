@@ -87,7 +87,7 @@ export async function buildBPMN(analysis: Analysis): Promise<string> {
 
 
     // OLD logic (optional): immediate convergence
-    const nextHops = targets.map(source => analysis.temporalChains.find(([a, b]) => a === source)?.[1]);
+    const nextHops = targets.map(source => analysis.temporalChains.find(([a, _]) => a === source)?.[1]);
     const uniqueHops = Array.from(new Set(nextHops.filter(Boolean)));
 
     if (uniqueHops.length === 1) {
