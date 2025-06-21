@@ -129,34 +129,60 @@ function App() {
     }
   }, [bpmnXml]);
 
-  const testLogicFunctions = async () => {
-    const rawAnalysis = buildBPMNModelWithAnalysis(sampleARM);
+  // const testLogicFunctions = async () => {
+  //   const rawAnalysis = buildBPMNModelWithAnalysis(sampleARM);
 
-    const analysis = {
-      activities: rawAnalysis.topoOrder,
-      temporalChains: rawAnalysis.chains,
-      exclusiveRelations: rawAnalysis.exclusive,
-      parallelRelations: rawAnalysis.parallel,
-      optionalDependencies: rawAnalysis.optional,
-      directDependencies: rawAnalysis.directChains,
-      topoOrder: rawAnalysis.topoOrder,
-    };
+  //   const analysis = {
+  //     activities: rawAnalysis.topoOrder,
+  //     temporalChains: rawAnalysis.chains,
+  //     exclusiveRelations: rawAnalysis.exclusive,
+  //     parallelRelations: rawAnalysis.parallel,
+  //     optionalDependencies: rawAnalysis.optional,
+  //     directDependencies: rawAnalysis.directChains,
+  //     topoOrder: rawAnalysis.topoOrder,
+  //   };
 
 
-    // 2. Build BPMN XML from analysis
-    const xml = await buildBPMN(analysis);
+  //   // 2. Build BPMN XML from analysis
+  //   const xml = await buildBPMN(analysis);
 
-    // 3. Set BPMN XML in state
-    setBpmnXml(xml);
+  //   // 3. Set BPMN XML in state
+  //   setBpmnXml(xml);
 
-    setTemporalChains(rawAnalysis.chains);
-    setExclusiveRelations(rawAnalysis.exclusive);
-    setParallelRelations(rawAnalysis.parallel);
-    setDirectTemporalChains(rawAnalysis.directChains);
-    setOptionalDependencies(rawAnalysis.optional.map(([a, b]) => [a, b]));
-    setTopoOrder(rawAnalysis.topoOrder);
+  //   setTemporalChains(rawAnalysis.chains);
+  //   setExclusiveRelations(rawAnalysis.exclusive);
+  //   setParallelRelations(rawAnalysis.parallel);
+  //   setDirectTemporalChains(rawAnalysis.directChains);
+  //   setOptionalDependencies(rawAnalysis.optional.map(([a, b]) => [a, b]));
+  //   setTopoOrder(rawAnalysis.topoOrder);
+  // };
+const testLogicFunctions = async () => {
+  const rawAnalysis = buildBPMNModelWithAnalysis(sampleARM);
+
+  // ✅ 調整所有屬性名稱對應舊版 Analysis type
+  //   - activities：若要保留拓撲順序可用 rawAnalysis.topoOrder，
+  //                 若舊程式只想要所有活動，可改成 Object.keys(sampleARM)
+  //   - optionalDependencies：若只需 [string, string]，可維持 map(…)
+  const analysis = {
+    activities: rawAnalysis.topoOrder, 
+    temporalChains: rawAnalysis.chains,
+    exclusiveRelations: rawAnalysis.exclusive,
+    parallelRelations: rawAnalysis.parallel,
+    optionalDependencies: rawAnalysis.optional.map(([a,b]) => [a,b]), 
+    directDependencies: rawAnalysis.directChains,
+    topoOrder: rawAnalysis.topoOrder, 
   };
 
+  const xml = await buildBPMN(analysis);
+  setBpmnXml(xml);
+
+  setTemporalChains(rawAnalysis.chains);
+  setExclusiveRelations(rawAnalysis.exclusive);
+  setParallelRelations(rawAnalysis.parallel);
+  setDirectTemporalChains(rawAnalysis.directChains);
+  setOptionalDependencies(rawAnalysis.optional.map(([a, b]) => [a, b]));
+  setTopoOrder(rawAnalysis.topoOrder);
+};
   return (
     <div className="min-h-screen bg-white min-w-screen">
       {/* Navigation Bar */}
