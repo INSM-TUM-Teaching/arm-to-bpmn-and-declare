@@ -1,6 +1,6 @@
 // AdvancedGatewayStrategy.ts
-import { GatewayGroupingStrategy } from './StrategyTypes';
-import { Analysis } from './TranslateARM';
+import type { GatewayGroupingStrategy } from './StrategyTypes';
+import  type { Analysis } from './translateARM';
 
 /**
  * AdvancedGatewayStrategy
