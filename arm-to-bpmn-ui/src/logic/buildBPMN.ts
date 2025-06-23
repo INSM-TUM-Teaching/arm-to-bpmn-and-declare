@@ -27,29 +27,35 @@ export async function buildBPMN(analysis: Analysis): Promise<string> {
 
 
       // helper function that returns the first common reachable node from all given sources using temporalChains
-  function findConvergingNode(sources: string[], chains: [string, string][]): string | null {
-    const getReachables = (start: string): Set<string> => {
-      const visited = new Set<string>();
-      const stack = [start];
-      while (stack.length) {
-        const node = stack.pop()!;
-        for (const [from, to] of chains) {
-          if (from === node && !visited.has(to)) {
-            visited.add(to);
-            stack.push(to);
+    function findConvergingNode(sources: string[], chains: [string, string][]): string | null {
+      if (sources.length === 0) return null;
+
+      const getReachables = (start: string): Set<string> => {
+        const visited = new Set<string>();
+        const stack = [start];
+        while (stack.length) {
+          const node = stack.pop()!;
+          for (const [from, to] of chains) {
+            if (from === node && !visited.has(to)) {
+              visited.add(to);
+              stack.push(to);
+            }
           }
         }
-      }
-      return visited;
-    };
+        return visited;
+      };
 
-    const reachSets = sources.map(getReachables);
-    const common = reachSets.reduce((acc, set) => {
-      return new Set([...acc].filter(x => set.has(x)));
-    });
+      const reachSets = sources.map(getReachables);
 
-    return [...common][0] ?? null;
-  }
+      if (reachSets.length === 0) return null;
+
+      const common = reachSets.reduce((acc, set) => {
+        return new Set([...acc].filter(x => set.has(x)));
+      });
+
+      return [...common][0] ?? null;
+    }
+
   //end of helper function
 
   function findLastNodeBefore(target: string, start: string, chains: [string, string][]): string | null {
@@ -81,7 +87,7 @@ export async function buildBPMN(analysis: Analysis): Promise<string> {
 
 
     // OLD logic (optional): immediate convergence
-    const nextHops = targets.map(source => analysis.temporalChains.find(([a, b]) => a === source)?.[1]);
+    const nextHops = targets.map(source => analysis.temporalChains.find(([a, _]) => a === source)?.[1]);
     const uniqueHops = Array.from(new Set(nextHops.filter(Boolean)));
 
     if (uniqueHops.length === 1) {
@@ -99,22 +105,22 @@ export async function buildBPMN(analysis: Analysis): Promise<string> {
       flows.push({ from: joinId, to: joinTarget });
       
     } else {
-            console.log("uniqueHops", "no else")
-      // neW logic: check eventual convergence
-      const convergeAt = findConvergingNode(targets, analysis.temporalChains);
-      if (convergeAt) {
-        const joinId = `${type}_Join_${convergeAt}`;
-        elements.set(joinId, { type, name: type.includes('exclusive') ? 'XOR Join' : 'AND Join' });
-        gateways.add(joinId);
+        console.log("uniqueHops", "no else")
+        // neW logic: check eventual convergence
+        const convergeAt = findConvergingNode(targets, analysis.temporalChains);
+        if (convergeAt) {
+          const joinId = `${type}_Join_${convergeAt}`;
+          elements.set(joinId, { type, name: type.includes('exclusive') ? 'XOR Join' : 'AND Join' });
+          gateways.add(joinId);
 
-        for (const source of targets) {
-          const lastBefore = findLastNodeBefore(convergeAt, source, analysis.temporalChains);
-          if (!lastBefore) continue;
-          flows.push({ from: lastBefore, to: joinId });
-          handledPairs.add(`${lastBefore}->${convergeAt}`);
-        }
+          for (const source of targets) {
+            const lastBefore = findLastNodeBefore(convergeAt, source, analysis.temporalChains);
+            if (!lastBefore) continue;
+            flows.push({ from: lastBefore, to: joinId });
+            handledPairs.add(`${lastBefore}->${convergeAt}`);
+          }
 
-        flows.push({ from: joinId, to: convergeAt });
+          flows.push({ from: joinId, to: convergeAt });
       }
     }
   }
@@ -155,35 +161,63 @@ export async function buildBPMN(analysis: Analysis): Promise<string> {
 
       if (isExclusive) {
         createSplitGateway(activity, filteredTargets, 'exclusiveGateway');
-      } else {
-        // If not exclusive, check for parallel
-        console.log("parallel", analysis.parallelRelations)
-        // 修正：檢查當前活動是否需要平行分叉
-        // 如果目標活動可以同時執行（不互斥），則使用平行閘道
-        const hasParallelTargets = filteredTargets.length > 1 && 
-          !filteredTargets.some((t1, i) =>
-            filteredTargets.slice(i + 1).some(t2 =>
-              analysis.exclusiveRelations.some(([x, y]) =>
-                (x === t1 && y === t2) || (x === t2 && y === t1)
-              )
-            )
-          );
-
-        if (hasParallelTargets) {
-          console.log(`Creating parallel gateway from ${activity} to [${filteredTargets.join(', ')}]`);
-          createSplitGateway(activity, filteredTargets, 'parallelGateway');
-        } else {
-          // 否則建立普通的序列流
-          for (const to of filteredTargets) {
-            const key = `${activity}->${to}`;
-            if (!handledPairs.has(key)) {
-              flows.push({ from: activity, to });
-              handledPairs.add(key);
-            }
-          }
-        }
       }
     }
+    //handle parallel relations
+    const parallelTargets = analysis.parallelRelations
+      .filter(([a]) => a === activity)
+      .map(([, b]) => b);
+
+    // Only create a gateway if there are 2 or more distinct targets
+    if (parallelTargets.length >= 2) {
+      // Avoid inserting duplicate parallel gateways
+      const key = `parallel_${activity}->${parallelTargets.sort().join(',')}`;
+      if (!handledPairs.has(key)) {
+        createSplitGateway(activity, parallelTargets, 'parallelGateway');
+        handledPairs.add(key);
+      }
+    }
+
+
+
+    // Step: Handle parallelRelations by grouping pairs into sets
+    const parallelGroups: string[][] = [];
+    const visited = new Set<string>();
+
+    for (const [a, b] of analysis.parallelRelations) {
+      if (visited.has(a) || visited.has(b)) continue;
+
+      const group = [a, b];
+      visited.add(a);
+      visited.add(b);
+
+      for (const [x, y] of analysis.parallelRelations) {
+        if ((group.includes(x) && !group.includes(y))) {
+          group.push(y);
+          visited.add(y);
+        } else if ((group.includes(y) && !group.includes(x))) {
+          group.push(x);
+          visited.add(x);
+        }
+      }
+
+      parallelGroups.push(group);
+    }
+    //for each parallel group, create a parallel gateway
+    for (const group of parallelGroups) {
+      const commonPredecessors = analysis.activities.filter(a =>
+        group.every(target =>
+          analysis.temporalChains.some(([from, to]) => from === a && to === target)
+        )
+      );
+
+      if (commonPredecessors.length === 1) {
+        const from = commonPredecessors[0];
+        createSplitGateway(from, group, 'parallelGateway');
+      }
+    }
+
+
   }
 
   // Step 4: Add Start and End events connected to the first and last activity
