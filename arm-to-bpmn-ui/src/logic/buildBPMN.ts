@@ -9,6 +9,7 @@ export type Analysis = {
   directDependencies: [string, string][]; // Direct a → b links (not transitive)
   optionalDependencies?: [string, string, 'optional_to' | 'optional_from'][]; // Optional relations (not used here)
   topoOrder?: string[]; // Optional topological ordering of activities
+  orRelations?: [string, string][]; // Optional inclusive relations (e.g. a ∨ b)
 };
 
 // Main function to build the BPMN XML from an analysis object
@@ -73,9 +74,9 @@ export async function buildBPMN(analysis: Analysis): Promise<string> {
    * - Adds a gateway from the source to each target
    * - If all targets reconverge at the same activity, add a join gateway before it
    */
-  function createSplitGateway(from: string, targets: string[], type: 'exclusiveGateway' | 'parallelGateway') {
+  function createSplitGateway(from: string, targets: string[], type: 'exclusiveGateway' | 'parallelGateway' | 'inclusiveGateway') {
     const splitId = `${type}_Split_${from}`;
-    elements.set(splitId, { type, name: type.includes('exclusive') ? 'XOR Split' : 'AND Split' });
+    elements.set(splitId, { type, name: type.includes('exclusive') ? 'XOR Split' : type.includes('parallelGateway') ? 'AND Split' : 'Inclusive Split' });
     gateways.add(splitId);
 
     flows.push({ from, to: splitId });
@@ -94,7 +95,7 @@ export async function buildBPMN(analysis: Analysis): Promise<string> {
       console.log("uniqueHops", uniqueHops)
       const joinTarget = uniqueHops[0]!;
       const joinId = `${type}_Join_${joinTarget}`;
-      elements.set(joinId, { type, name: type.includes('exclusive') ? 'XOR Join' : 'AND Join' });
+      elements.set(joinId, { type, name: type.includes('exclusive') ? 'XOR Join' : type.includes('parallelGateway') ? 'AND Join' : 'Inclusive Join' });
       gateways.add(joinId);
 
       for (const source of targets) {
@@ -217,7 +218,37 @@ export async function buildBPMN(analysis: Analysis): Promise<string> {
       }
     }
 
+    //handle inclusive relations
+    const orGroups: string[][] = [];
+    const orVisited = new Set<string>();
+    for (const [a, b] of analysis.orRelations ?? []) {
+      if (orVisited.has(a) || orVisited.has(b)) continue;
+      const group = [a, b];
+      orVisited.add(a);
+      orVisited.add(b);
+      for (const [x, y] of analysis.orRelations ?? []) {
+        if ((group.includes(x) && !group.includes(y))) {
+          group.push(y);
+          orVisited.add(y);
+        } else if ((group.includes(y) && !group.includes(x))) {
+          group.push(x);
+          orVisited.add(x);
+        }
+      }
+      orGroups.push(group);
+    }
 
+    for (const group of orGroups) {
+      const commonPredecessors = analysis.activities.filter(a =>
+        group.every(target =>
+          analysis.temporalChains.some(([from, to]) => from === a && to === target)
+        )
+      );
+      if (commonPredecessors.length === 1) {
+        const from = commonPredecessors[0];
+        createSplitGateway(from, group, 'inclusiveGateway');
+      }
+    }
   }
 
   // Step 4: Add Start and End events connected to the first and last activity
@@ -226,7 +257,23 @@ export async function buildBPMN(analysis: Analysis): Promise<string> {
 
   elements.set('StartEvent_1', { type: 'startEvent' });
   elements.set('EndEvent_1', { type: 'endEvent' });
-  flows.push({ from: 'StartEvent_1', to: first });
+  //flows.push({ from: 'StartEvent_1', to: first });
+  //detecting the first activity that has no incoming flows or first gateway
+  const startTargets = analysis.activities.filter(a =>
+    !analysis.temporalChains.some(([, to]) => to === a)
+  );
+
+  if (startTargets.length === 1) {
+    flows.push({ from: 'StartEvent_1', to: startTargets[0] });
+  } else if (startTargets.length > 1) {
+    const startGatewayId = 'inclusiveGateway_Start';
+    elements.set(startGatewayId, { type: 'inclusiveGateway', name: 'Start Split' });
+    flows.push({ from: 'StartEvent_1', to: startGatewayId });
+    for (const target of startTargets) {
+      flows.push({ from: startGatewayId, to: target });
+    }
+}
+
   flows.push({ from: last, to: 'EndEvent_1' });
 
   /**
