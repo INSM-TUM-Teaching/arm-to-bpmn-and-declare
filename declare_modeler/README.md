@@ -31,16 +31,19 @@ npm install
 
 ## Usage
 
-### 1. Upload an Activity Relationship Matrix (ARM)
-- On the homepage, click the upload box and select a JSON file formatted as an ARM (Andree et al., 2024).
-- Example format:
+### 1. Choose a model to upload
+
+#### On the homepage, you'll be presented with two upload options:
+1. Upload ARM Matrix: Upload a JSON file representing an Activity Relationship Matrix (Andree et al., 2024).
+Example format:
 ```
 {
   "a": { "b": ["<", "⇒"] }
 }
 ```
+2. Upload Declare Model: Upload an existing Declare model (in JSON format) to visualize it directly.
 
-### 2. Automatic translation
+### 2. Automatic translation (ARM only)
 - Upon upload, your ARM will be automatically validated and translated into Declare constraints using predefined mapping logic.
 
 ### 3. Model saving
@@ -61,10 +64,11 @@ npm install
 
 ## Features
 
-##### 1. Automatic translation from ARM to ConDec constraints
-##### 2. Graphical visualization of process models with no overlapping elements
-##### 3. Export options: Download models as structured JSON and high-quality PNG images
-##### 4. Interactive graph: Users can move and explore graphical elements for better clarity
+#### 1. Dual upload options: ARM matrix or Declare model
+#### 2. Automatic translation from ARM to ConDec constraints
+#### 3. Graphical visualization of process models with no overlapping elements
+#### 4. Export options: Download models as structured JSON and high-quality PNG images
+#### 5. Interactive graph: Users can move and explore graphical elements for better clarity
 
 
 ## License
