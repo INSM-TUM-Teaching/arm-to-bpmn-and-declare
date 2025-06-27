@@ -1,23 +1,23 @@
-// A dependency is defined as a tuple: [temporal, existential]
-export type Dependency = [temporal: string, existential: string];
-
-// The ARM structure, representing relationships between activities
-export interface ARM {
-  [source: string]: {
-    [target: string]: Dependency;
+export interface ARMMatrix {
+  [activity: string]: {
+    [activity: string]: [string, string]; // [temporal, existential]
   };
 }
 
-// A Declare constraint maps an activity pair to a Declare relation
 export interface DeclareConstraint {
   source: string;
   target: string;
   constraint: string;
-  reversed?: boolean; // Optional: mark if reversed during normalization
+  label: string;
 }
 
-// The final Declare model structure with all activities and constraints
+export interface UnaryConstraint {
+  activity: string;
+  constraint: string;
+}
+
 export interface DeclareModel {
   activities: string[];
   constraints: DeclareConstraint[];
-} 
+  unary: UnaryConstraint[];
+}
