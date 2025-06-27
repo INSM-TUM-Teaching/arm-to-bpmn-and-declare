@@ -3,6 +3,8 @@ import { buildBPMN } from "../logic/buildBPMN";
 import { buildBPMNModelWithAnalysis } from "../logic/buildBPMNModelWithAnalysis";
 import { BpmnViewer } from "../components/BpmnViewer";
 import type { ARMMatrix } from "../logic/translateARM";
+import { AdvancedLevelStrategy } from "../logic/AdvancedLevelStrategy";
+import { AdvancedGatewayStrategy } from "../logic/AdvancedGatewayStrategy";
 
 interface TestCaseConfig {
   name: string;
@@ -167,6 +169,76 @@ const BatchTestPage: React.FC = () => {
                   loading="lazy"
                   className="max-w-full border"
                 />
+              </section>
+
+              {/* Activity Levels (AdvancedLevelStrategy) */}
+              <section className="mb-10">
+                <h2 className="text-xl font-semibold mb-4 text-black">Activity Levels (AdvancedLevelStrategy)</h2>
+                <table className="table-auto border text-black">
+                  <thead>
+                    <tr>
+                      <th className="border px-2">Activity</th>
+                      <th className="border px-2">Level</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const nodes = r.analysis.activities;
+                      const edges = r.analysis.directDependencies.length
+                        ? r.analysis.directDependencies
+                        : r.analysis.temporalChains;
+                      const levels = new AdvancedLevelStrategy().computeLevels(nodes, edges);
+                      return Object.entries(levels).map(([act, lvl]) => (
+                        <tr key={act}>
+                          <td className="border px-2">{act}</td>
+                          <td className="border px-2">{lvl}</td>
+                        </tr>
+                      ));
+                    })()}
+                  </tbody>
+                </table>
+              </section>
+
+              {/* Gateway Groupings (AdvancedGatewayStrategy) */}
+              <section className="mb-10">
+                <h2 className="text-xl font-semibold mb-4 text-black">Gateway Groupings (AdvancedGatewayStrategy)</h2>
+                <table className="table-auto border text-black">
+                  <thead>
+                    <tr>
+                      <th className="border px-2">Activity</th>
+                      <th className="border px-2">Groups</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const nodes = r.analysis.activities;
+                      const edges = r.analysis.directDependencies.length
+                        ? r.analysis.directDependencies
+                        : r.analysis.temporalChains;
+                      const gatewayStrategy = new AdvancedGatewayStrategy();
+                      return nodes.map((node: string) => {
+                        const directTargets = edges
+                          .filter(([from]: [string, string]) => from === node)
+                          .map(([, to]: [string, string]) => to);
+                        const groups = gatewayStrategy.groupSuccessors(node, directTargets, r.analysis) || [];
+                        return (
+                          <tr key={node}>
+                            <td className="border px-2 align-top">{node}</td>
+                            <td className="border px-2">
+                              {groups.length === 0
+                                ? <span className="text-gray-400">-</span>
+                                : groups.map((g: any, i: number) => (
+                                    <div key={i}>
+                                      <b>{g.type}:</b> {g.targets.join(', ')}
+                                    </div>
+                                  ))}
+                            </td>
+                          </tr>
+                        );
+                      });
+                    })()}
+                  </tbody>
+                </table>
               </section>
             </div>
           )}

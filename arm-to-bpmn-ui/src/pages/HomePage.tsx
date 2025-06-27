@@ -1,8 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { buildBPMN } from '../logic/buildBPMN';
+import { AdvancedLevelStrategy } from '../logic/AdvancedLevelStrategy';
 import { buildBPMNModelWithAnalysis } from '../logic/buildBPMNModelWithAnalysis';
 import type { ARMMatrix } from '../logic/translateARM';
 import BpmnViewer from 'bpmn-js/lib/NavigatedViewer';
+import { AdvancedGatewayStrategy } from '../logic/AdvancedGatewayStrategy';
 //import sampleARMJson from './data/sampleARM1.json';
 
 
@@ -116,6 +118,8 @@ function HomePage() {
   const [orRelations, setOrRelations] = useState<[string, string][]>([]);
   const [topoOrder, setTopoOrder] = useState<string[]>([]);
   const [bpmnXml, setBpmnXml] = useState<string>("");
+  const [levelMap, setLevelMap] = useState<Record<string, number>>({});
+  const [gatewayGroups, setGatewayGroups] = useState<Record<string, any[]>>({});
   const viewerRef = useRef<HTMLDivElement>(null);
   // const [armMatrix, setArmMatrix] = useState<ARMMatrix | null>(null);
 
@@ -135,7 +139,6 @@ function HomePage() {
 
   const testLogicFunctions = async () => {
     const rawAnalysis = buildBPMNModelWithAnalysis(sampleARM4);
-
     const analysis = {
       activities: rawAnalysis.topoOrder,
       temporalChains: rawAnalysis.chains,
@@ -146,7 +149,6 @@ function HomePage() {
       topoOrder: rawAnalysis.topoOrder,
       orRelations: rawAnalysis.orRelations,
     };
-
 
     // 2. Build BPMN XML from analysis
     const xml = await buildBPMN(analysis);
@@ -161,6 +163,27 @@ function HomePage() {
     setOptionalDependencies(rawAnalysis.optional.map(([a, b]) => [a, b]));
     setTopoOrder(rawAnalysis.topoOrder);
     setOrRelations(rawAnalysis.orRelations);
+
+    // 4. 計算 levelMap 並 setState
+    const nodes = analysis.activities;
+    const edges = analysis.directDependencies.length
+      ? analysis.directDependencies
+      : analysis.temporalChains;
+    const levels = new AdvancedLevelStrategy().computeLevels(nodes, edges);
+    setLevelMap(levels);
+
+    // 5. 計算 gateway groupings
+    const gatewayStrategy = new AdvancedGatewayStrategy();
+    const groupResult: Record<string, any[]> = {};
+    for (const node of nodes) {
+      // 找出這個 node 的 direct successors
+      const directTargets = edges
+        .filter(([from]) => from === node)
+        .map(([, to]) => to);
+      const groups = gatewayStrategy.groupSuccessors(node, directTargets, analysis);
+      groupResult[node] = groups || [];
+    }
+    setGatewayGroups(groupResult);
   };
 
   return (
@@ -222,6 +245,56 @@ function HomePage() {
         <section className="mb-16">
           <h2 className="text-xl font-semibold mb-4">🔧 BPMN XML Output (Debug)</h2>
           <textarea value={bpmnXml} readOnly rows={20} className="w-full font-mono p-2 border" />
+        </section>
+
+        {/* Activity Levels (AdvancedLevelStrategy) */}
+        <section className="mb-10">
+          <h2 className="text-xl font-semibold mb-4 text-black">Activity Levels (AdvancedLevelStrategy)</h2>
+          <table className="table-auto border text-black">
+            <thead>
+              <tr>
+                <th className="border px-2">Activity</th>
+                <th className="border px-2">Level</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(levelMap).map(([act, lvl]) => (
+                <tr key={act}>
+                  <td className="border px-2">{act}</td>
+                  <td className="border px-2">{lvl}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+
+        {/* Gateway Groupings (AdvancedGatewayStrategy) */}
+        <section className="mb-10">
+          <h2 className="text-xl font-semibold mb-4 text-black">Gateway Groupings (AdvancedGatewayStrategy)</h2>
+          <table className="table-auto border text-black">
+            <thead>
+              <tr>
+                <th className="border px-2">Activity</th>
+                <th className="border px-2">Groups</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(gatewayGroups).map(([act, groups]) => (
+                <tr key={act}>
+                  <td className="border px-2 align-top">{act}</td>
+                  <td className="border px-2">
+                    {groups.length === 0
+                      ? <span className="text-gray-400">-</span>
+                      : groups.map((g, i) => (
+                          <div key={i}>
+                            <b>{g.type}:</b> {g.targets.join(', ')}
+                          </div>
+                        ))}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </section>
 
         {/* How to Use */}
