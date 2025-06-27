@@ -1,24 +1,36 @@
-import { useState } from "react";
-import { translateARMtoDeclare } from "../core/translateARM";
-import relationshipMap from "../data/relationship_map.json";
-import { reverseConstraintLabel } from "../parser/normalizer";
+import { useState } from 'react';
+import { translateARMtoDeclare } from '../core/translateARM';
+import { DeclareModel } from '../types/types';
 
 export default function ArmToDeclareUI() {
-  const [inputJSON, setInputJSON] = useState("");
-  const [output, setOutput] = useState<any>(null);
+  const [inputJSON, setInputJSON] = useState('');
+  const [output, setOutput] = useState<DeclareModel | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const handleTranslate = () => {
+  // Function: Translate ARM to Declare model and POST to backend
+  const handleTranslate = async () => {
     try {
       const parsed = JSON.parse(inputJSON);
-      const result = translateARMtoDeclare(parsed, relationshipMap);
+      const result = translateARMtoDeclare(parsed);
       setOutput(result);
       setError(null);
+
+      // Send to backend
+      const response = await fetch('http://localhost:5174/api/save-declare-model', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(result),
+      });
+
+      if (!response.ok) throw new Error("Failed to save model to backend");
+      alert('Declare model saved and ready to visualize!');
     } catch (err: any) {
-      setError("Invalid JSON or mapping error: " + err.message);
+      setError('Translation failed: ' + err.message);
+      setOutput(null);
     }
   };
 
+  // Handle .json file upload
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -26,22 +38,23 @@ export default function ArmToDeclareUI() {
     const reader = new FileReader();
     reader.onload = (e) => {
       const content = e.target?.result;
-      if (typeof content === "string") {
+      if (typeof content === 'string') {
         setInputJSON(content);
       }
     };
     reader.readAsText(file);
   };
 
+  // Download translated Declare model to local disk as JSON
   const handleDownload = () => {
     if (!output) return;
     const blob = new Blob([JSON.stringify(output, null, 2)], {
-      type: "application/json",
+      type: 'application/json'
     });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
+    const link = document.createElement('a');
     link.href = url;
-    link.download = "declare_model.json";
+    link.download = 'declare_model.json';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -82,25 +95,13 @@ export default function ArmToDeclareUI() {
         </button>
       )}
 
-      {error && <p className="text-red-600 mt-4">{error}</p>}
+      {error && <p className="text-red-600 mt-4 whitespace-pre-wrap">{error}</p>}
 
       {output && (
         <div className="mt-6">
           <h2 className="text-xl font-semibold mb-2">Translated Declare Model:</h2>
-          <pre className="bg-gray-100 p-4 rounded overflow-auto">
-            {JSON.stringify(
-              {
-                ...output,
-                constraints: output.constraints.map((c: any) => ({
-                  ...c,
-                  label: c.reversed
-                    ? reverseConstraintLabel(c.constraint)
-                    : c.constraint,
-                })),
-              },
-              null,
-              2
-            )}
+          <pre className="bg-gray-100 p-4 rounded overflow-auto text-sm">
+            {JSON.stringify(output, null, 2)}
           </pre>
         </div>
       )}
