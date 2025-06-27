@@ -1,8 +1,9 @@
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, Navigate } from 'react-router-dom';
 import BPMN from './pages/BPMN';
 import BatchTestPage from './pages/BatchTestPage';
 import UploadPage from './pages/UploadPage';
 import Home from './pages/Home';
+import DeclarePage from './pages/Declare';
 
 function App() {
   return (
@@ -19,14 +20,17 @@ function App() {
             <a href="/docs" className="hover:underline hover:text-[#e5e5e5] transition-colors duration-150">Documentation</a>
             <Link to="/upload" className="hover:underline hover:text-[#e5e5e5] transition-colors duration-150">Upload</Link>
             <Link to="/bpmn" className="hover:underline hover:text-[#e5e5e5] transition-colors duration-150">BPMN</Link>
+            <Link to="/declare" className="hover:underline hover:text-[#e5e5e5] transition-colors duration-150">Declare</Link>
           </div>
         </nav>
         <main className="py-6 px-2">
           <Routes>
+            <Route path="/" element={<Navigate to="/home" replace />} />
             <Route path="/bpmn" element={<BPMN />} />
             <Route path="/batch" element={<BatchTestPage />} />
             <Route path="/upload" element={<UploadPage />} />
             <Route path="/home" element={<Home />} />
+            <Route path="/declare" element={<DeclarePage />} />
           </Routes>
         </main>
       </div>
