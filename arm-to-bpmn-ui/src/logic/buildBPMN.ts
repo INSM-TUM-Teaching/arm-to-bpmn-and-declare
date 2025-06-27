@@ -1,284 +1,195 @@
 import { layoutProcess } from 'bpmn-auto-layout';
 
-// Type definition for the input analysis structure
+// Type definition for the analysis result that drives the BPMN construction
 export type Analysis = {
-  activities: string[]; // All activity IDs
-  temporalChains: [string, string][]; // Ordered pairs representing sequence constraints (a → b)
-  exclusiveRelations: [string, string][]; // Mutually exclusive branches
-  parallelRelations: [string, string][]; // Activities that should run in parallel
-  directDependencies: [string, string][]; // Direct a → b links (not transitive)
-  optionalDependencies?: [string, string, 'optional_to' | 'optional_from'][]; // Optional relations (not used here)
-  topoOrder?: string[]; // Optional topological ordering of activities
-  orRelations?: [string, string][]; // Optional inclusive relations (e.g. a ∨ b)
+  activities: string[]; // List of activity names
+  temporalChains: [string, string][]; // Full temporal orderings
+  exclusiveRelations: [string, string][]; // Pairs of mutually exclusive activities
+  parallelRelations: [string, string][]; // Pairs of parallel activities
+  directDependencies: [string, string][]; // Only direct temporal edges
+  optionalDependencies?: [string, string, 'optional_to' | 'optional_from'][]; // Optional links
+  orRelations?: [string, string][]; // Inclusive (OR) relations
+  topoOrder?: string[]; // Topological sort of activities
 };
 
-// Main function to build the BPMN XML from an analysis object
+// Main function to build BPMN XML from an analysis object
 export async function buildBPMN(analysis: Analysis): Promise<string> {
-  const elements = new Map<string, { type: string; name?: string }>(); // BPMN nodes
-  const flows: Array<{ from: string; to: string }> = []; // Sequence flows
-  const gateways = new Set<string>(); // Set of inserted gateways
-  const handledPairs = new Set<string>(); // To avoid duplicate flows
+  // BPMN elements (tasks, gateways, events) keyed by ID
+  const elements = new Map<string, { type: string; name?: string }>();
 
-  console.log("start", analysis.parallelRelations)
+  // Sequence flows between elements
+  const flows: Array<{ from: string; to: string }> = [];
 
-  // Step 1: Create all activities as BPMN task elements
-  for (const activity of analysis.activities) {
-    elements.set(activity, { type: 'task', name: activity });
-  }
+  // To track already created flow pairs and avoid duplication
+  const handledPairs = new Set<string>();
 
+  // Track which elements point to each node (incoming)
+  const flowTargets = new Map<string, Set<string>>();
 
-      // helper function that returns the first common reachable node from all given sources using temporalChains
-    function findConvergingNode(sources: string[], chains: [string, string][]): string | null {
-      if (sources.length === 0) return null;
+  // Track which elements a node points to (outgoing)
+  const flowSources = new Map<string, Set<string>>();
 
-      const getReachables = (start: string): Set<string> => {
-        const visited = new Set<string>();
-        const stack = [start];
-        while (stack.length) {
-          const node = stack.pop()!;
-          for (const [from, to] of chains) {
-            if (from === node && !visited.has(to)) {
-              visited.add(to);
-              stack.push(to);
-            }
+  // Add a BPMN element only if it doesn't exist
+  const addElement = (id: string, type: string, name?: string) => {
+    if (!elements.has(id)) {
+      elements.set(id, { type, name });
+    }
+  };
+
+  // Add a flow (sequence edge) between two elements
+  const addFlow = (from: string, to: string) => {
+    const key = `${from}->${to}`;
+    if (!handledPairs.has(key)) {
+      flows.push({ from, to });
+      handledPairs.add(key);
+
+      if (!flowTargets.has(to)) flowTargets.set(to, new Set());
+      flowTargets.get(to)!.add(from);
+
+      if (!flowSources.has(from)) flowSources.set(from, new Set());
+      flowSources.get(from)!.add(to);
+    }
+  };
+
+  // Utility: count how many incoming edges a node has
+  const countIncoming = (node: string) => flowTargets.get(node)?.size || 0;
+
+  // Utility: count how many outgoing edges a node has
+  const countOutgoing = (node: string) => flowSources.get(node)?.size || 0;
+
+  // Create a BPMN task element for each activity
+  analysis.activities.forEach(act => addElement(act, 'task', act));
+
+  // Identify a common convergence node that all sources reach
+  const findConvergingNode = (sources: string[]): string | null => {
+    const getReachables = (start: string): Set<string> => {
+      const visited = new Set<string>();
+      const stack = [start];
+      while (stack.length) {
+        const node = stack.pop()!;
+        for (const [from, to] of analysis.temporalChains) {
+          if (from === node && !visited.has(to)) {
+            visited.add(to);
+            stack.push(to);
           }
         }
-        return visited;
-      };
+      }
+      return visited;
+    };
+    const reachSets = sources.map(getReachables);
+    return [...reachSets.reduce((a, b) => new Set([...a].filter(x => b.has(x))))][0] ?? null;
+  };
 
-      const reachSets = sources.map(getReachables);
-
-      if (reachSets.length === 0) return null;
-
-      const common = reachSets.reduce((acc, set) => {
-        return new Set([...acc].filter(x => set.has(x)));
-      });
-
-      return [...common][0] ?? null;
-    }
-
-  //end of helper function
-
-  function findLastNodeBefore(target: string, start: string, chains: [string, string][]): string | null {
-    let current = start;
+  // Walk along a temporal chain from one node until just before a target
+  const findLastBefore = (target: string, from: string): string | null => {
+    let current = from;
     while (true) {
-      const next = chains.find(([a]) => a === current)?.[1];
+      const next = analysis.temporalChains.find(([a]) => a === current)?.[1];
       if (!next || next === target) break;
       current = next;
     }
     return current === target ? null : current;
-  }
+  };
 
-  /**
-   * Helper: Insert split + join gateways (exclusive or parallel)
-   * - Adds a gateway from the source to each target
-   * - If all targets reconverge at the same activity, add a join gateway before it
-   */
-  function createSplitGateway(from: string, targets: string[], type: 'exclusiveGateway' | 'parallelGateway' | 'inclusiveGateway') {
+  // Create a gateway (split and join) for a logic type (XOR, AND, OR)
+  const createSplitJoin = (from: string, targets: string[], type: 'exclusiveGateway' | 'parallelGateway' | 'inclusiveGateway') => {
     const splitId = `${type}_Split_${from}`;
-    elements.set(splitId, { type, name: type.includes('exclusive') ? 'XOR Split' : type.includes('parallelGateway') ? 'AND Split' : 'Inclusive Split' });
-    gateways.add(splitId);
+    const joinId = `${type}_Join_${from}`;
+    const splitName = type === 'exclusiveGateway' ? 'XOR Split' : type === 'parallelGateway' ? 'AND Split' : 'OR Split';
+    const joinName = type === 'exclusiveGateway' ? 'XOR Join' : type === 'parallelGateway' ? 'AND Join' : 'OR Join';
 
-    flows.push({ from, to: splitId });
+    addElement(splitId, type, splitName);
+    addFlow(from, splitId);
+    targets.forEach(t => addFlow(splitId, t));
 
-    for (const to of targets) {
-      flows.push({ from: splitId, to });
-      handledPairs.add(`${from}->${to}`);
-    }
-
-
-    // OLD logic (optional): immediate convergence
-    const nextHops = targets.map(source => analysis.temporalChains.find(([a, _]) => a === source)?.[1]);
-    const uniqueHops = Array.from(new Set(nextHops.filter(Boolean)));
-
-    if (uniqueHops.length === 1) {
-      console.log("uniqueHops", uniqueHops)
-      const joinTarget = uniqueHops[0]!;
-      const joinId = `${type}_Join_${joinTarget}`;
-      elements.set(joinId, { type, name: type.includes('exclusive') ? 'XOR Join' : type.includes('parallelGateway') ? 'AND Join' : 'Inclusive Join' });
-      gateways.add(joinId);
-
-      for (const source of targets) {
-        flows.push({ from: source, to: joinId });
-        handledPairs.add(`${source}->${joinTarget}`);
-      }
-
-      flows.push({ from: joinId, to: joinTarget });
-      
+    const convergeAt = findConvergingNode(targets);
+    if (convergeAt) {
+      const joinAt = `${type}_Join_${convergeAt}`;
+      addElement(joinAt, type, joinName);
+      targets.forEach(source => {
+        const last = findLastBefore(convergeAt, source);
+        if (last && last !== joinAt) addFlow(last, joinAt);
+      });
+      addFlow(joinAt, convergeAt);
     } else {
-        console.log("uniqueHops", "no else")
-        // neW logic: check eventual convergence
-        const convergeAt = findConvergingNode(targets, analysis.temporalChains);
-        if (convergeAt) {
-          const joinId = `${type}_Join_${convergeAt}`;
-          elements.set(joinId, { type, name: type.includes('exclusive') ? 'XOR Join' : 'AND Join' });
-          gateways.add(joinId);
-
-          for (const source of targets) {
-            const lastBefore = findLastNodeBefore(convergeAt, source, analysis.temporalChains);
-            if (!lastBefore) continue;
-            flows.push({ from: lastBefore, to: joinId });
-            handledPairs.add(`${lastBefore}->${convergeAt}`);
-          }
-
-          flows.push({ from: joinId, to: convergeAt });
+      addElement(joinId, type, joinName);
+      targets.forEach(t => {
+        if (countOutgoing(t) === 0) {
+          addFlow(t, joinId);
+        }
+      });
+      if (!flowTargets.get('EndEvent_1')?.has(joinId)) {
+        addFlow(joinId, 'EndEvent_1');
       }
     }
+  };
+
+  // Create flows based on direct dependencies, handle exclusive gateways
+  analysis.directDependencies.forEach(([a, b]) => {
+    const dependents = analysis.directDependencies.filter(([x]) => x === a).map(([, y]) => y);
+    const isExclusive = analysis.exclusiveRelations.some(([x, y]) => dependents.includes(x) && dependents.includes(y));
+    if (dependents.length > 1 && isExclusive) {
+      createSplitJoin(a, dependents, 'exclusiveGateway');
+    } else if (!handledPairs.has(`${a}->${b}`)) {
+      if (countOutgoing(a) === 0 && countIncoming(b) < 1) {
+        addFlow(a, b);
+      }
+    }
+  });
+
+  // Group and connect elements with parallel or inclusive relations
+  const groupRelations = (pairs: [string, string][], type: 'parallelGateway' | 'inclusiveGateway') => {
+    const groups: string[][] = [];
+    const seen = new Set<string>();
+    for (const [a, b] of pairs) {
+      if (seen.has(a) || seen.has(b)) continue;
+      const group = [a, b];
+      seen.add(a);
+      seen.add(b);
+      for (const [x, y] of pairs) {
+        if (group.includes(x) && !group.includes(y)) { group.push(y); seen.add(y); }
+        if (group.includes(y) && !group.includes(x)) { group.push(x); seen.add(x); }
+      }
+      groups.push(group);
+    }
+    for (const group of groups) {
+      const preds = analysis.activities.filter(p => group.every(t => analysis.temporalChains.some(([a, b]) => a === p && b === t)));
+      if (preds.length === 1) createSplitJoin(preds[0], group, type);
+    }
+  };
+
+  // Apply split/join logic to parallel and OR-type relationships
+  groupRelations(analysis.parallelRelations, 'parallelGateway');
+  groupRelations(analysis.orRelations ?? [], 'inclusiveGateway');
+
+  // Start Event: Single or gateway-based
+  addElement('StartEvent_1', 'startEvent');
+  const startNodes = analysis.activities.filter(a => !analysis.temporalChains.some(([, to]) => to === a));
+  if (startNodes.length === 1) {
+    addFlow('StartEvent_1', startNodes[0]);
+  } else {
+    const g = 'inclusiveGateway_Split_StartEvent_1';
+    addElement(g, 'inclusiveGateway', 'OR Split');
+    addFlow('StartEvent_1', g);
+    startNodes.forEach(n => addFlow(g, n));
   }
 
-  /**
-   * Step 2: Analyze directDependencies and build structure
-   * - For each activity, determine its outgoing flows
-   * - Decide if it's a plain sequence, exclusive gateway, or parallel gateway
-   */
-  for (const activity of analysis.activities) {
-    //check direct dependi
-    const allTargets = analysis.directDependencies
-      .filter(([a]) => a === activity)
-      .map(([, b]) => b);
+  // End Event: Single or gateway-based join
+  addElement('EndEvent_1', 'endEvent');
+  const endNodes = analysis.activities.filter(a => !analysis.temporalChains.some(([from]) => from === a));
+  const existingInEnd = new Set([...flows].filter(f => f.to === 'EndEvent_1').map(f => f.from));
+  const uniqueEndNodes = endNodes.filter(n => !existingInEnd.has(n));
 
-    // Remove transitive dependencies (i.e., b in a → b → c)
-    let filteredTargets = allTargets.filter(target =>
-      !allTargets.some(other =>
-        other !== target &&
-        analysis.temporalChains.some(([from, to]) => from === other && to === target)
-      )
-    );
-
-    if (filteredTargets.length === 1) {
-      // Just a plain sequence flow
-      const to = filteredTargets[0];
-      const key = `${activity}->${to}`;
-      if (!handledPairs.has(key)) {
-        flows.push({ from: activity, to });
-        handledPairs.add(key);
-      }
-    } else if (filteredTargets.length > 1) {
-      // Step 3: Decide if it's an exclusive or parallel gateway
-
-      const isExclusive = analysis.exclusiveRelations.some(
-        ([x, y]) => filteredTargets.includes(x) && filteredTargets.includes(y)
-      );
-
-      if (isExclusive) {
-        createSplitGateway(activity, filteredTargets, 'exclusiveGateway');
-      }
-    }
-    //handle parallel relations
-    const parallelTargets = analysis.parallelRelations
-      .filter(([a]) => a === activity)
-      .map(([, b]) => b);
-
-    // Only create a gateway if there are 2 or more distinct targets
-    if (parallelTargets.length >= 2) {
-      // Avoid inserting duplicate parallel gateways
-      const key = `parallel_${activity}->${parallelTargets.sort().join(',')}`;
-      if (!handledPairs.has(key)) {
-        createSplitGateway(activity, parallelTargets, 'parallelGateway');
-        handledPairs.add(key);
-      }
-    }
-
-
-
-    // Step: Handle parallelRelations by grouping pairs into sets
-    const parallelGroups: string[][] = [];
-    const visited = new Set<string>();
-
-    for (const [a, b] of analysis.parallelRelations) {
-      if (visited.has(a) || visited.has(b)) continue;
-
-      const group = [a, b];
-      visited.add(a);
-      visited.add(b);
-
-      for (const [x, y] of analysis.parallelRelations) {
-        if ((group.includes(x) && !group.includes(y))) {
-          group.push(y);
-          visited.add(y);
-        } else if ((group.includes(y) && !group.includes(x))) {
-          group.push(x);
-          visited.add(x);
-        }
-      }
-
-      parallelGroups.push(group);
-    }
-    //for each parallel group, create a parallel gateway
-    for (const group of parallelGroups) {
-      const commonPredecessors = analysis.activities.filter(a =>
-        group.every(target =>
-          analysis.temporalChains.some(([from, to]) => from === a && to === target)
-        )
-      );
-
-      if (commonPredecessors.length === 1) {
-        const from = commonPredecessors[0];
-        createSplitGateway(from, group, 'parallelGateway');
-      }
-    }
-
-    //handle inclusive relations
-    const orGroups: string[][] = [];
-    const orVisited = new Set<string>();
-    for (const [a, b] of analysis.orRelations ?? []) {
-      if (orVisited.has(a) || orVisited.has(b)) continue;
-      const group = [a, b];
-      orVisited.add(a);
-      orVisited.add(b);
-      for (const [x, y] of analysis.orRelations ?? []) {
-        if ((group.includes(x) && !group.includes(y))) {
-          group.push(y);
-          orVisited.add(y);
-        } else if ((group.includes(y) && !group.includes(x))) {
-          group.push(x);
-          orVisited.add(x);
-        }
-      }
-      orGroups.push(group);
-    }
-
-    for (const group of orGroups) {
-      const commonPredecessors = analysis.activities.filter(a =>
-        group.every(target =>
-          analysis.temporalChains.some(([from, to]) => from === a && to === target)
-        )
-      );
-      if (commonPredecessors.length === 1) {
-        const from = commonPredecessors[0];
-        createSplitGateway(from, group, 'inclusiveGateway');
-      }
-    }
+  if (uniqueEndNodes.length === 1) {
+    addFlow(uniqueEndNodes[0], 'EndEvent_1');
+  } else if (uniqueEndNodes.length > 1) {
+    const g = 'inclusiveGateway_Join_End';
+    addElement(g, 'inclusiveGateway', 'OR Join End');
+    uniqueEndNodes.forEach(n => addFlow(n, g));
+    addFlow(g, 'EndEvent_1');
   }
 
-  // Step 4: Add Start and End events connected to the first and last activity
-  const first = analysis.topoOrder?.[0] || analysis.activities[0];
-  const last = analysis.topoOrder?.[analysis.activities.length - 1] || analysis.activities.at(-1)!;
-
-  elements.set('StartEvent_1', { type: 'startEvent' });
-  elements.set('EndEvent_1', { type: 'endEvent' });
-  //flows.push({ from: 'StartEvent_1', to: first });
-  //detecting the first activity that has no incoming flows or first gateway
-  const startTargets = analysis.activities.filter(a =>
-    !analysis.temporalChains.some(([, to]) => to === a)
-  );
-
-  if (startTargets.length === 1) {
-    flows.push({ from: 'StartEvent_1', to: startTargets[0] });
-  } else if (startTargets.length > 1) {
-    const startGatewayId = 'inclusiveGateway_Start';
-    elements.set(startGatewayId, { type: 'inclusiveGateway', name: 'Start Split' });
-    flows.push({ from: 'StartEvent_1', to: startGatewayId });
-    for (const target of startTargets) {
-      flows.push({ from: startGatewayId, to: target });
-    }
-}
-
-  flows.push({ from: last, to: 'EndEvent_1' });
-
-  /**
-   * Step 5: Generate BPMN XML from all elements and flows
-   */
+  // Generate XML string for BPMN elements and flows
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
                   xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
@@ -288,22 +199,19 @@ export async function buildBPMN(analysis: Analysis): Promise<string> {
                   targetNamespace="http://bpmn.io/schema/bpmn">
   <bpmn:process id="Process_1" isExecutable="false">
 `;
-
-  // Add all BPMN nodes
+  // Output BPMN nodes
   for (const [id, { type, name }] of elements) {
     xml += `    <bpmn:${type} id="${id}"${name ? ` name="${name}"` : ''}>
 `;
-    const inc = flows.filter(f => f.to === id).map(f => `Flow_${f.from}_${f.to}`);
-    const out = flows.filter(f => f.from === id).map(f => `Flow_${f.from}_${f.to}`);
-    for (const i of inc) xml += `      <bpmn:incoming>${i}</bpmn:incoming>
-`;
-    for (const o of out) xml += `      <bpmn:outgoing>${o}</bpmn:outgoing>
-`;
+    flows.filter(f => f.to === id).forEach(f => xml += `      <bpmn:incoming>Flow_${f.from}_${f.to}</bpmn:incoming>
+`);
+    flows.filter(f => f.from === id).forEach(f => xml += `      <bpmn:outgoing>Flow_${f.from}_${f.to}</bpmn:outgoing>
+`);
     xml += `    </bpmn:${type}>
 `;
   }
 
-  // Add all sequence flows
+  // Output sequence flows
   for (const { from, to } of flows) {
     xml += `    <bpmn:sequenceFlow id="Flow_${from}_${to}" sourceRef="${from}" targetRef="${to}" />
 `;
@@ -312,7 +220,6 @@ export async function buildBPMN(analysis: Analysis): Promise<string> {
   xml += `  </bpmn:process>
 </bpmn:definitions>`;
 
-  // Step 6: Apply auto-layout to get readable positioning for diagram
-  const laidOut = await layoutProcess(xml);
-  return laidOut;
+  // Use bpmn-auto-layout to prettify and return final layouted XML
+  return await layoutProcess(xml);
 }

@@ -3,6 +3,8 @@ import { buildBPMN } from '../logic/buildBPMN';
 import { buildBPMNModelWithAnalysis } from '../logic/buildBPMNModelWithAnalysis';
 import type { ARMMatrix } from '../logic/translateARM';
 import BpmnViewer from 'bpmn-js/lib/NavigatedViewer';
+import { FiDownload } from 'react-icons/fi';
+
 //import sampleARMJson from './data/sampleARM1.json';
 
 
@@ -107,7 +109,7 @@ const sampleARM7: ARMMatrix = {
 
 
 
-function HomePage() {
+function BPMN() {
   const [temporalChains, setTemporalChains] = useState<string[][]>([]);
   const [exclusiveRelations, setExclusiveRelations] = useState<[string, string][]>([]);
   const [parallelRelations, setParallelRelations] = useState<[string, string][]>([]);
@@ -117,11 +119,10 @@ function HomePage() {
   const [topoOrder, setTopoOrder] = useState<string[]>([]);
   const [bpmnXml, setBpmnXml] = useState<string>("");
   const viewerRef = useRef<HTMLDivElement>(null);
-  // const [armMatrix, setArmMatrix] = useState<ARMMatrix | null>(null);
-
-  //  const sampleARM = sampleARMJson as unknown as ARMMatrix;
+  const viewerInstance = useRef<any>(null);
 
   useEffect(() => {
+
     if (viewerRef.current && bpmnXml) {
       const viewer = new BpmnViewer({ container: viewerRef.current });
       viewer.importXML(bpmnXml).then(() => {
@@ -130,7 +131,10 @@ function HomePage() {
       }).catch(err => {
         console.error('Failed to render diagram:', err);
       });
+      //for exporting as image
+      viewerInstance.current = viewer;
     }
+    
   }, [bpmnXml]);
 
   const testLogicFunctions = async () => {
@@ -163,6 +167,57 @@ function HomePage() {
     setOrRelations(rawAnalysis.orRelations);
   };
 
+  // Function to export BPMN as image
+  const exportSVG = async () => {
+    if (!viewerInstance.current) return;
+    try {
+      const { svg } = await viewerInstance.current.saveSVG();
+      const blob = new Blob([svg], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'bpmn-diagram.svg';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('SVG Export Error:', err);
+    }
+  };
+
+const exportPNG = async () => {
+  if (!viewerInstance.current) return;
+    try {
+      const { svg } = await viewerInstance.current.saveSVG();
+
+      // Convert SVG to PNG
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+      const img = new Image();
+      const svgBlob = new Blob([svg], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(svgBlob);
+
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        URL.revokeObjectURL(url);
+
+        canvas.toBlob(blob => {
+          if (!blob) return;
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'bpmn-diagram.png';
+          a.click();
+        });
+      };
+      img.src = url;
+    } catch (err) {
+      console.error('PNG Export Error:', err);
+    }
+  };
+
+
   return (
     <div className="min-h-screen bg-white min-w-screen">
       <main className="px-6 py-10 md:px-12 lg:px-32">
@@ -175,6 +230,46 @@ function HomePage() {
           <button onClick={testLogicFunctions} className="bg-[#3070B3] text-white px-4 py-2 rounded shadow hover:bg-blue-800">
             Generate & View BPMN
           </button>
+
+          {/**Export button */}
+          {bpmnXml && (
+            <button
+              onClick={() => {
+                const blob = new Blob([bpmnXml], { type: 'application/xml' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'bpmn-diagram.bpmn';
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+              className="flex gap-2 items-center bg-purple-600 text-white px-4 py-2 rounded shadow hover:bg-purple-700"
+            >
+              Export BPMN XML
+              <FiDownload/>
+            </button>
+          )}
+          {/**export as image */}
+          {bpmnXml && (
+            <div className="flex flex-wrap gap-4">
+              <button
+                onClick={exportSVG}
+                className="flex gap-2 items-center bg-purple-600 text-white px-4 py-2 rounded shadow hover:bg-purple-700"
+              >
+                Export as SVG
+                <FiDownload/>
+              </button>
+              <button
+                onClick={exportPNG}
+                className="flex gap-2 items-center bg-purple-600 text-white px-4 py-2 rounded shadow hover:bg-purple-700"
+              >
+                Export as PNG
+                <FiDownload/>
+              </button>
+            </div>
+          )}
+
+
         </div>
 
         {/* Logic Output Section */}
@@ -239,4 +334,4 @@ function HomePage() {
   );
 }
 
-export default HomePage;
+export default BPMN;

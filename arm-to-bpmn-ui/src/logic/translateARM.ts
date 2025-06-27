@@ -93,7 +93,8 @@ export function detectExclusiveRelations(matrix: ARMMatrix): Array<[string, stri
       const a = keys[i];
       const b = keys[j];
       const exist = matrix[a]?.[b]?.[1] || matrix[b]?.[a]?.[1];
-      if (["⇎", "∨", "¬"].includes(exist)) {
+     // if (["⇎", "∨", "¬"].includes(exist)) {
+      if (["⇎", "¬"].includes(exist)) {
         exclusives.push([a, b]);
       }
     }
