@@ -14,7 +14,9 @@
   "dependencies": {
     "@headlessui/react": "^2.2.4",
     "@radix-ui/react-context-menu": "^2.2.15",
+    "cors": "^2.8.5",
     "cytoscape": "^3.32.0",
+    "express": "^5.1.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
