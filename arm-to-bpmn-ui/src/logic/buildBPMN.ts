@@ -12,8 +12,84 @@ export type Analysis = {
   topoOrder?: string[]; // Topological sort of activities
 };
 
+//helper function to check gateway in pathway
+function inferGatewayTypeFromGroup(
+  sources: string[],
+  targets: string[],
+  analysis: Analysis
+): 'exclusiveGateway' | 'parallelGateway' | 'inclusiveGateway' {
+  let hasExclusive = false;
+  let hasParallel = false;
+  let hasInclusive = false;
+
+  for (let i = 0; i < targets.length; i++) {
+    for (let j = i + 1; j < targets.length; j++) {
+      const [a, b] = [targets[i], targets[j]];
+
+      if (analysis.exclusiveRelations.some(([x, y]) => (x === a && y === b) || (x === b && y === a))) {
+        hasExclusive = true;
+      } else if (analysis.parallelRelations.some(([x, y]) => (x === a && y === b) || (x === b && y === a))) {
+        hasParallel = true;
+      } else if (analysis.orRelations?.some(([x, y]) => (x === a && y === b) || (x === b && y === a))) {
+        hasInclusive = true;
+      }
+    }
+  }
+
+  if (hasExclusive) return 'exclusiveGateway';
+  if (hasInclusive) return 'inclusiveGateway';
+  if (hasParallel) return 'parallelGateway';
+
+  // fallback
+  return 'parallelGateway';
+}
+
+
+//helper function to detect the type of start gateway based on start nodes and analysis
+function detectStartGatewayType(
+  startNodes: string[],
+  analysis: Analysis
+): 'parallelGateway' | 'exclusiveGateway' | 'inclusiveGateway' {
+  // If any start node pair is mutually exclusive *and* there's no common successor between them,
+  // assume they are truly separate exclusive branches
+  const exclusiveStartPairs = startNodes.flatMap((a, i) =>
+    startNodes.slice(i + 1).map(b => [a, b] as [string, string])
+  ).filter(([a, b]) =>
+    analysis.exclusiveRelations.some(([x, y]) =>
+      (x === a && y === b) || (x === b && y === a)
+    )
+  );
+
+  const shareSuccessor = (a: string, b: string): boolean => {
+    const succA = new Set(
+      analysis.temporalChains.filter(([from]) => from === a).map(([, to]) => to)
+    );
+    return analysis.temporalChains.some(([from, to]) => from === b && succA.has(to));
+  };
+
+  const trulyExclusive = exclusiveStartPairs.some(([a, b]) => !shareSuccessor(a, b));
+
+  if (trulyExclusive) return 'exclusiveGateway';
+
+  const orRelationExists = startNodes.some((a, i) =>
+    startNodes.slice(i + 1).some(b =>
+      analysis.orRelations?.some(([x, y]) =>
+        (x === a && y === b) || (x === b && y === a)
+      )
+    )
+  );
+
+  if (orRelationExists) return 'inclusiveGateway';
+
+  return 'parallelGateway';
+}
+
+
 // Main function to build BPMN XML from an analysis object
 export async function buildBPMN(analysis: Analysis): Promise<string> {
+  //map to check join gateway output
+  const joinGatewayFor: Record<string, string> = {};
+
   // BPMN elements (tasks, gateways, events) keyed by ID
   const elements = new Map<string, { type: string; name?: string }>();
 
@@ -39,17 +115,27 @@ export async function buildBPMN(analysis: Analysis): Promise<string> {
   // Add a flow (sequence edge) between two elements
   const addFlow = (from: string, to: string) => {
     const key = `${from}->${to}`;
-    if (!handledPairs.has(key)) {
-      flows.push({ from, to });
-      handledPairs.add(key);
+    if (handledPairs.has(key)) return;
 
-      if (!flowTargets.has(to)) flowTargets.set(to, new Set());
-      flowTargets.get(to)!.add(from);
+    const fromType = elements.get(from)?.type;
+    const toType = elements.get(to)?.type;
 
-      if (!flowSources.has(from)) flowSources.set(from, new Set());
-      flowSources.get(from)!.add(to);
-    }
+    //Prevent multiple outgoing from activites
+    if (fromType === 'task' && (flowSources.get(from)?.size ?? 0) >= 1) return;
+
+    //Prevent multiple incoming to activites 
+    if (toType === 'task' && (flowTargets.get(to)?.size ?? 0) >= 1) return;
+
+    flows.push({ from, to });
+    handledPairs.add(key);
+
+    if (!flowTargets.has(to)) flowTargets.set(to, new Set());
+    flowTargets.get(to)!.add(from);
+
+    if (!flowSources.has(from)) flowSources.set(from, new Set());
+    flowSources.get(from)!.add(to);
   };
+
 
   // Utility: count how many incoming edges a node has
   const countIncoming = (node: string) => flowTargets.get(node)?.size || 0;
@@ -116,26 +202,54 @@ export async function buildBPMN(analysis: Analysis): Promise<string> {
       targets.forEach(t => {
         if (countOutgoing(t) === 0) {
           addFlow(t, joinId);
+          joinGatewayFor[t] = joinId; // <-- Track that t's output is now the join gateway
         }
       });
-      if (!flowTargets.get('EndEvent_1')?.has(joinId)) {
+      /*if (!flowTargets.get('EndEvent_1')?.has(joinId)) {
         addFlow(joinId, 'EndEvent_1');
-      }
+      }*/
     }
   };
 
   // Create flows based on direct dependencies, handle exclusive gateways
-  analysis.directDependencies.forEach(([a, b]) => {
-    const dependents = analysis.directDependencies.filter(([x]) => x === a).map(([, y]) => y);
-    const isExclusive = analysis.exclusiveRelations.some(([x, y]) => dependents.includes(x) && dependents.includes(y));
-    if (dependents.length > 1 && isExclusive) {
-      createSplitJoin(a, dependents, 'exclusiveGateway');
-    } else if (!handledPairs.has(`${a}->${b}`)) {
-      if (countOutgoing(a) === 0 && countIncoming(b) < 1) {
-        addFlow(a, b);
-      }
+  // Enhanced branching logic that supports gateway-to-gateway paths
+  const handledSplits = new Set<string>();
+
+  for (const activity of analysis.activities) {
+    if (handledSplits.has(activity)) continue;
+
+    const outgoings = analysis.directDependencies
+      .filter(([from]) => from === activity)
+      .map(([_, to]) => to);
+
+    if (outgoings.length === 0) continue;
+
+    const hasExclusive = outgoings.some((a, i) =>
+      outgoings.slice(i + 1).some(b =>
+        analysis.exclusiveRelations.some(([x, y]) =>
+          (x === a && y === b) || (x === b && y === a)
+        )
+      )
+    );
+
+    const hasParallel = outgoings.some((a, i) =>
+      outgoings.slice(i + 1).some(b =>
+        analysis.parallelRelations.some(([x, y]) =>
+          (x === a && y === b) || (x === b && y === a)
+        )
+      )
+    );
+
+    if (outgoings.length > 1) {
+      const gatewayType = inferGatewayTypeFromGroup([activity], outgoings, analysis);
+      createSplitJoin(activity, outgoings, gatewayType);
+      handledSplits.add(activity);
+    } else if (outgoings.length === 1) {
+      addFlow(activity, outgoings[0]);
     }
-  });
+
+  }
+
 
   // Group and connect elements with parallel or inclusive relations
   const groupRelations = (pairs: [string, string][], type: 'parallelGateway' | 'inclusiveGateway') => {
@@ -168,11 +282,21 @@ export async function buildBPMN(analysis: Analysis): Promise<string> {
   if (startNodes.length === 1) {
     addFlow('StartEvent_1', startNodes[0]);
   } else {
-    const g = 'inclusiveGateway_Split_StartEvent_1';
-    addElement(g, 'inclusiveGateway', 'OR Split');
-    addFlow('StartEvent_1', g);
-    startNodes.forEach(n => addFlow(g, n));
+    const gatewayType = detectStartGatewayType(startNodes, analysis);
+
+    const gatewayId = `${gatewayType}_Split_StartEvent_1`;
+    const gatewayName =
+      gatewayType === 'parallelGateway'
+        ? 'AND Split'
+        : gatewayType === 'exclusiveGateway'
+        ? 'XOR Split'
+        : 'OR Split';
+
+    addElement(gatewayId, gatewayType, gatewayName);
+    addFlow('StartEvent_1', gatewayId);
+    startNodes.forEach(n => addFlow(gatewayId, n));
   }
+
 
   // End Event: Single or gateway-based join
   addElement('EndEvent_1', 'endEvent');
@@ -180,12 +304,16 @@ export async function buildBPMN(analysis: Analysis): Promise<string> {
   const existingInEnd = new Set([...flows].filter(f => f.to === 'EndEvent_1').map(f => f.from));
   const uniqueEndNodes = endNodes.filter(n => !existingInEnd.has(n));
 
+  // Use joinGatewayFor to connect join gateways (if any) to the end OR-join
   if (uniqueEndNodes.length === 1) {
-    addFlow(uniqueEndNodes[0], 'EndEvent_1');
+    const n = joinGatewayFor[uniqueEndNodes[0]] || uniqueEndNodes[0];
+    addFlow(n, 'EndEvent_1');
   } else if (uniqueEndNodes.length > 1) {
     const g = 'inclusiveGateway_Join_End';
-    addElement(g, 'inclusiveGateway', 'OR Join End');
-    uniqueEndNodes.forEach(n => addFlow(n, g));
+    addElement(g, 'inclusiveGateway', 'OR Join');
+    uniqueEndNodes
+      .map(n => joinGatewayFor[n] || n)
+      .forEach(n => addFlow(n, g));
     addFlow(g, 'EndEvent_1');
   }
 

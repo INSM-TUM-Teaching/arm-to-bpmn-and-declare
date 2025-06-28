@@ -71,13 +71,14 @@ const sampleARM: ARMMatrix = {
   "d": { "a": [">", "⇔"], "b": [">", "⇔"], "c": [">", "⇔"], "d": ["x", "x"]}
 };
 
-//simple parallel + inclusive example
+//complex parallel + inclusive example
 const sampleARM4: ARMMatrix = {
   "a": { "a": ["x", "x"], "b": ["<", "⇔"],"c": ["<", "⇔"], "d": ["-", "∨"]},
   "b": { "a": [">", "⇔"], "b": ["x", "x"], "c": ["-", "⇔"], "d": ["-", "∨"]},
   "c": { "a": [">", "⇔"], "b": ["-", "⇔"], "c": ["x", "x"], "d": ["-", "∨"]},
   "d": { "a": ["-", "∨"], "b": ["-", "∨"], "c": ["-", "∨"], "d": ["x", "x"]}
 };
+
 
 //sample or gateway
 const sampleARM7: ARMMatrix = {
