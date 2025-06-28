@@ -6,6 +6,8 @@ import type { ARMMatrix } from '../logic/translateARM';
 import BpmnViewer from 'bpmn-js/lib/NavigatedViewer';
 import { AdvancedGatewayStrategy } from '../logic/AdvancedGatewayStrategy';
 import { FiDownload } from 'react-icons/fi';
+import { LayerAwareGatewayStrategy } from '../logic/LayerAwareGatewayStrategy';
+import { analyzeGatewaysAndJoins } from '../logic/analyzeGatewaysAndJoins';
 
 //import sampleARMJson from './data/sampleARM1.json';
 
@@ -123,6 +125,9 @@ function BPMN() {
   const [bpmnXml, setBpmnXml] = useState<string>("");
   const [levelMap, setLevelMap] = useState<Record<string, number>>({});
   const [gatewayGroups, setGatewayGroups] = useState<Record<string, any[]>>({});
+  const [joinStack, setJoinStack] = useState<any[]>([]);
+  const [joinPoints, setJoinPoints] = useState<any[]>([]);
+  const [endJoins, setEndJoins] = useState<any[]>([]);
   const viewerRef = useRef<HTMLDivElement>(null);
   const viewerInstance = useRef<any>(null);
 
@@ -169,26 +174,46 @@ function BPMN() {
     setTopoOrder(rawAnalysis.topoOrder);
     setOrRelations(rawAnalysis.orRelations);
 
-    // 4. 計算 levelMap 並 setState
-    const nodes = analysis.activities;
-    const edges = analysis.directDependencies.length
-      ? analysis.directDependencies
-      : analysis.temporalChains;
-    const levels = new AdvancedLevelStrategy().computeLevels(nodes, edges);
+    // 4. 分析 gateway/join/end join
+    const { gatewayStack, joinPoints, endJoins, levels } = analyzeGatewaysAndJoins(analysis);
+    setJoinStack(gatewayStack);
+    setJoinPoints(joinPoints);
+    setEndJoins(endJoins);
     setLevelMap(levels);
 
-    // 5. 計算 gateway groupings
-    const gatewayStrategy = new AdvancedGatewayStrategy();
-    const groupResult: Record<string, any[]> = {};
-    for (const node of nodes) {
-      // 找出這個 node 的 direct successors
-      const directTargets = edges
-        .filter(([from]) => from === node)
-        .map(([, to]) => to);
-      const groups = gatewayStrategy.groupSuccessors(node, directTargets, analysis);
-      groupResult[node] = groups || [];
-    }
-    setGatewayGroups(groupResult);
+    // 4. 計算 levelMap 並 setState
+    const nodes = analysis.activities.slice(); // 複製一份
+const edges = analysis.directDependencies.length
+  ? analysis.directDependencies.slice()
+  : analysis.temporalChains.slice();
+
+// 找出 level 0 nodes
+const level0Nodes = nodes.filter(n => levels[n] === 0);
+
+// 若沒有 start node，補上
+if (!nodes.includes('start')) nodes.unshift('start');
+// start 指向所有 level 0
+level0Nodes.forEach(n => {
+  if (!edges.some(([from, to]) => from === 'start' && to === n)) {
+    edges.push(['start', n]);
+  }
+});
+setLevelMap(levels);
+
+// 5. 計算 gateway groupings
+const gatewayStrategy = new LayerAwareGatewayStrategy();
+const groupResult: Record<string, any[]> = {};
+for (const node of nodes) {
+  const directTargets = edges
+    .filter(([from]) => from === node)
+    .map(([, to]) => to);
+  const groups = gatewayStrategy.groupSuccessors(node, directTargets, {
+    ...analysis,
+    activityLevels: levels,
+  });
+  groupResult[node] = groups || [];
+}
+setGatewayGroups(groupResult);
   };
 
   // Function to export BPMN as image
@@ -387,6 +412,77 @@ const exportPNG = async () => {
                           </div>
                         ))}
                   </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+
+        {/* Join Stack (FILO) */}
+        <section className="mb-10">
+          <h2 className="text-xl font-semibold mb-4 text-black">Join Stack (FILO)</h2>
+          <table className="table-auto border text-black">
+            <thead>
+              <tr>
+                <th className="border px-2">Nodes</th>
+                <th className="border px-2">Target</th>
+                <th className="border px-2">Gateway Type</th>
+                <th className="border px-2">Layers</th>
+              </tr>
+            </thead>
+            <tbody>
+              {joinStack.map((item, i) => (
+                <tr key={i}>
+                  <td className="border px-2">{item.nodes.join(', ')}</td>
+                  <td className="border px-2">{item.target}</td>
+                  <td className="border px-2">{item.gateway_type}</td>
+                  <td className="border px-2">{item.layers}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+
+        {/* Join Points (Multi-in) */}
+        <section className="mb-10">
+          <h2 className="text-xl font-semibold mb-4 text-black">Join Points (Multi-in)</h2>
+          <table className="table-auto border text-black">
+            <thead>
+              <tr>
+                <th className="border px-2">Node</th>
+                <th className="border px-2">Sources</th>
+                <th className="border px-2">Layer</th>
+              </tr>
+            </thead>
+            <tbody>
+              {joinPoints.map((item, i) => (
+                <tr key={i}>
+                  <td className="border px-2">{item.node}</td>
+                  <td className="border px-2">{item.sources.join(', ')}</td>
+                  <td className="border px-2">{item.layer}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+
+        {/* End Point Join */}
+        <section className="mb-10">
+          <h2 className="text-xl font-semibold mb-4 text-black">End Point Join</h2>
+          <table className="table-auto border text-black">
+            <thead>
+              <tr>
+                <th className="border px-2">End</th>
+                <th className="border px-2">Sources</th>
+                <th className="border px-2">Layer</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(endJoins ?? []).map((item, i) => (
+                <tr key={i}>
+                  <td className="border px-2">{item.end}</td>
+                  <td className="border px-2">{item.sources.join(', ')}</td>
+                  <td className="border px-2">{item.layer}</td>
                 </tr>
               ))}
             </tbody>

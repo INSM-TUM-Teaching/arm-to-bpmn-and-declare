@@ -5,6 +5,8 @@ import { BpmnViewer } from "../components/BpmnViewer";
 import type { ARMMatrix } from "../logic/translateARM";
 import { AdvancedLevelStrategy } from "../logic/AdvancedLevelStrategy";
 import { AdvancedGatewayStrategy } from "../logic/AdvancedGatewayStrategy";
+import { LayerAwareGatewayStrategy } from "../logic/LayerAwareGatewayStrategy";
+import { analyzeGatewaysAndJoins } from "../logic/analyzeGatewaysAndJoins";
 
 interface TestCaseConfig {
   name: string;
@@ -201,7 +203,7 @@ const BatchTestPage: React.FC = () => {
 
               {/* Gateway Groupings (AdvancedGatewayStrategy) */}
               <section className="mb-10">
-                <h2 className="text-xl font-semibold mb-4 text-black">Gateway Groupings (AdvancedGatewayStrategy)</h2>
+                <h2 className="text-xl font-semibold mb-4 text-black">Gateway Groupings (LayerAwareGatewayStrategy)</h2>
                 <table className="table-auto border text-black">
                   <thead>
                     <tr>
@@ -211,16 +213,27 @@ const BatchTestPage: React.FC = () => {
                   </thead>
                   <tbody>
                     {(() => {
-                      const nodes = r.analysis.activities;
+                      const nodes = r.analysis.activities.slice();
                       const edges = r.analysis.directDependencies.length
-                        ? r.analysis.directDependencies
-                        : r.analysis.temporalChains;
-                      const gatewayStrategy = new AdvancedGatewayStrategy();
+                        ? r.analysis.directDependencies.slice()
+                        : r.analysis.temporalChains.slice();
+                      const levels = new AdvancedLevelStrategy().computeLevels(nodes, edges);
+                      const level0Nodes = nodes.filter(n => levels[n] === 0);
+                      if (!nodes.includes('start')) nodes.unshift('start');
+                      level0Nodes.forEach(n => {
+                        if (!edges.some(([from, to]) => from === 'start' && to === n)) {
+                          edges.push(['start', n]);
+                        }
+                      });
+                      const gatewayStrategy = new LayerAwareGatewayStrategy();
                       return nodes.map((node: string) => {
                         const directTargets = edges
                           .filter(([from]: [string, string]) => from === node)
                           .map(([, to]: [string, string]) => to);
-                        const groups = gatewayStrategy.groupSuccessors(node, directTargets, r.analysis) || [];
+                        const groups = gatewayStrategy.groupSuccessors(node, directTargets, {
+                          ...r.analysis,
+                          activityLevels: levels,
+                        }) || [];
                         return (
                           <tr key={node}>
                             <td className="border px-2 align-top">{node}</td>
@@ -236,6 +249,85 @@ const BatchTestPage: React.FC = () => {
                           </tr>
                         );
                       });
+                    })()}
+                  </tbody>
+                </table>
+              </section>
+
+              {/* Join Stack (FILO) */}
+              <section className="mb-10">
+                <h2 className="text-xl font-semibold mb-4 text-black">Join Stack (FILO)</h2>
+                <table className="table-auto border text-black">
+                  <thead>
+                    <tr>
+                      <th className="border px-2">Nodes</th>
+                      <th className="border px-2">Target</th>
+                      <th className="border px-2">Gateway Type</th>
+                      <th className="border px-2">Layers</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const { gatewayStack } = analyzeGatewaysAndJoins(r.analysis);
+                      return gatewayStack.map((item: any, i: number) => (
+                        <tr key={i}>
+                          <td className="border px-2">{item.nodes.join(', ')}</td>
+                          <td className="border px-2">{item.target}</td>
+                          <td className="border px-2">{item.gateway_type}</td>
+                          <td className="border px-2">{item.layers}</td>
+                        </tr>
+                      ));
+                    })()}
+                  </tbody>
+                </table>
+              </section>
+
+              {/* Join Points */}
+              <section className="mb-10">
+                <h2 className="text-xl font-semibold mb-4 text-black">Join Points (Multi-in)</h2>
+                <table className="table-auto border text-black">
+                  <thead>
+                    <tr>
+                      <th className="border px-2">Node</th>
+                      <th className="border px-2">Sources</th>
+                      <th className="border px-2">Layer</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const { joinPoints } = analyzeGatewaysAndJoins(r.analysis);
+                      return joinPoints.map((item: any, i: number) => (
+                        <tr key={i}>
+                          <td className="border px-2">{item.node}</td>
+                          <td className="border px-2">{item.sources.join(', ')}</td>
+                          <td className="border px-2">{item.layer}</td>
+                        </tr>
+                      ));
+                    })()}
+                  </tbody>
+                </table>
+              </section>
+              {/* End Join */}
+              <section className="mb-10">
+                <h2 className="text-xl font-semibold mb-4 text-black">End Point Join</h2>
+                <table className="table-auto border text-black">
+                  <thead>
+                    <tr>
+                      <th className="border px-2">End</th>
+                      <th className="border px-2">Sources</th>
+                      <th className="border px-2">Layer</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const { endJoins } = analyzeGatewaysAndJoins(r.analysis);
+                      return (endJoins ?? []).map((item, i) => (
+                        <tr key={i}>
+                          <td className="border px-2">{item.end}</td>
+                          <td className="border px-2">{item.sources.join(', ')}</td>
+                          <td className="border px-2">{item.layer}</td>
+                        </tr>
+                      ));
                     })()}
                   </tbody>
                 </table>
