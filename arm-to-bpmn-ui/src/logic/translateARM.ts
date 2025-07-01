@@ -1,6 +1,6 @@
 // Define possible types of temporal and existential relations
 export type TemporalRelation = "<" | "<d" | ">" | ">d" | "-" | "x";
-export type ExistentialRelation = "⇔" | "⇎" | "⇒" | "⇐" | "∨" | "¬" | "-" | "x";
+export type ExistentialRelation = "⇔" | "⇎" | "⇒" | "⇐" | "∨" | "¬∧" | "-" | "x";
 
 // Define the structure of an ARM matrix:
 // Each key is an activity, mapping to other activities with a [TemporalRelation, ExistentialRelation] tuple

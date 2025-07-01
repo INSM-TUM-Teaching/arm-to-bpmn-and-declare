@@ -1,18 +1,80 @@
+/**
+ * analyzeGatewaysAndJoins
+ *
+ * This function analyzes a process model (given as an Analysis object) and computes:
+ *   - Node levels (distance from the start node)
+ *   - Gateway groupings (splits and their grouped successors)
+ *   - Join stack (merge points for branches, including gateway and leaf joins)
+ *
+ * Algorithm steps:
+ * 1. Compute activity levels for all nodes.
+ * 2. Ensure a 'start' node exists and connect it to all level-0 nodes.
+ * 3. Use LayerAwareGatewayStrategy to group successors for each split node.
+ * 4. Build a mapping from gateway IDs to semantic IDs (e.g., 'parallel', 'or').
+ * 5. Build a mapping from each node to its parent gateway.
+ * 6. Identify all leaf nodes (nodes without successors).
+ * 7. Construct the join stack:
+ *    - For each gateway, create a join entry for its grouped branches.
+ *    - For each leaf node not already part of a gateway group, create a join entry.
+ * 8. Sort the join stack by level (FILO order).
+ *
+ * # Input
+ * - analysis: An object with at least the following fields:
+ *   - activities: string[]; // All node names
+ *   - temporalChains: [string, string][]; // Fallback edges if directDependencies is empty
+ *   - directDependencies: [string, string][]; // Edges between nodes
+ *   - (other fields may be present and are passed to the grouping strategy)
+ *
+ * # Output
+ * Returns an object:
+ * {
+ *   joinStack: Array<{
+ *     note: string[];      // Branch nodes to be joined
+ *     target: string;      // The node to connect after merging
+ *     gateway: string;     // Gateway id
+ *     gatewayType: string; // Gateway type ('parallel', 'exclusive', 'or', or '')
+ *     order: number;       // Level/order for sorting (higher = closer to end)
+ *   }>,
+ *   levels: Record<string, number>; // Node name to level mapping
+ *   gatewayGroups: Record<string, Array<{ type: string; targets: string[] }>>;
+ * }
+ *
+ * This is used for BPMN/Declare translation and visualization.
+ */
+
 import { AdvancedLevelStrategy } from './AdvancedLevelStrategy';
 import { LayerAwareGatewayStrategy } from './LayerAwareGatewayStrategy';
 
-export function analyzeGatewaysAndJoins(analysis: any) {
-  // 1. 準備 nodes/edges/levels
-  const nodes = analysis.activities.slice();
-  const edges = analysis.directDependencies.length
-    ? analysis.directDependencies.slice()
-    : analysis.temporalChains.slice();
+interface Analysis {
+  activities: string[];
+  temporalChains: [string, string][];
+  directDependencies: [string, string][];
+  // Other fields...
+}
 
-  // levels
+interface GatewayGroup {
+  type: string; // 'parallel' | 'exclusive' | 'or'
+  targets: string[];
+}
+
+interface JoinStackItem {
+  note: string[];         // Branch nodes
+  target: string;         // The node to connect after merging
+  gateway: string;        // Gateway id
+  gatewayType: string;    // Gateway type
+  order: number;          // Insertion order
+}
+
+export function analyzeGatewaysAndJoins(analysis: Analysis) {
+  const nodes = [...analysis.activities];
+  const edges: [string, string][] = analysis.directDependencies.length
+    ? [...analysis.directDependencies]
+    : [...analysis.temporalChains];
+
+  // Add start node and edges if not present
   const levels = new AdvancedLevelStrategy().computeLevels(nodes, edges);
-
-  // level 0 nodes
   const level0Nodes = nodes.filter(n => levels[n] === 0);
+
   if (!nodes.includes('start')) nodes.unshift('start');
   level0Nodes.forEach(n => {
     if (!edges.some(([from, to]) => from === 'start' && to === n)) {
@@ -20,105 +82,90 @@ export function analyzeGatewaysAndJoins(analysis: any) {
     }
   });
 
-  // 2. Gateway stack (split gateways)
+  // Gateway groupings
   const gatewayStrategy = new LayerAwareGatewayStrategy();
-  const splitStack: any[] = [];
-  for (const node of nodes) {
-    const directTargets = edges
-      .filter(([from]) => from === node)
-      .map(([, to]) => to);
-    const groups = gatewayStrategy.groupSuccessors(node, directTargets, {
+  const allSplitNodes = new Set([
+    ...nodes,
+    ...edges.map(([from]) => from)
+  ]);
+  const gatewayGroups: Record<string, GatewayGroup[]> = {};
+  for (const n of allSplitNodes) {
+    const succ = edges.filter(([from]) => from === n).map(([, to]) => to);
+    const groups = gatewayStrategy.groupSuccessors(n, succ, {
       ...analysis,
       activityLevels: levels,
     });
-    if (groups && groups.length > 0) {
-      groups.forEach(g => {
-        splitStack.push({
-          node,
-          type: g.type,
-          targets: g.targets,
-          layer: levels[node]
-        });
+    if (groups?.length) gatewayGroups[n] = groups;
+  }
+
+  // 1. Generate mapping from gatewayId to semantic id
+  const gatewayIdMap: Record<string, string> = {};
+  Object.entries(gatewayGroups).forEach(([gatewayId, groups]) => {
+    const type = groups[0].type;
+    if (type === 'or') gatewayIdMap[gatewayId] = 'or';
+    else if (type === 'parallel') gatewayIdMap[gatewayId] = 'parallel';
+    else gatewayIdMap[gatewayId] = gatewayId;
+  });
+
+  // 2. Build mapping from node to parent gateway
+  const nodeToParentGateway: Record<string, string> = {};
+  Object.entries(gatewayGroups).forEach(([gwId, groups]) => {
+    groups.forEach(group => {
+      group.targets.forEach(target => {
+        nodeToParentGateway[target] = gwId;
+      });
+    });
+  });
+
+  // 3. Find all leaf nodes (nodes without successors)
+  const hasSuccessor = new Set(edges.map(([from]) => from));
+  const leafNodes = nodes.filter(n => !hasSuccessor.has(n));
+
+  // 4. Build join stack
+  const joinStack: JoinStackItem[] = [];
+
+  // 4a. Handle gateway join
+  Object.entries(gatewayGroups).forEach(([gatewayId, groups]) => {
+    groups.forEach(group => {
+      let target = 'end';
+      const parent = nodeToParentGateway[gatewayId];
+      if (parent) {
+        target = gatewayIdMap[parent] || parent;
+      }
+      const order = Math.max(...group.targets.map(t => levels[t] || 0));
+      joinStack.push({
+        note: group.targets.map(t => gatewayIdMap[t] ? gatewayIdMap[t] : t), // semantic id conversion here
+        target,
+        gateway: gatewayIdMap[gatewayId] || gatewayId,
+        gatewayType: group.type,
+        order,
+      });
+    });
+  });
+
+  // 4b. Handle leaf join
+  leafNodes.forEach(leaf => {
+    const isInGateway = Object.values(gatewayGroups).some(groups =>
+      groups.some(group => group.targets.includes(leaf))
+    );
+    if (!isInGateway) {
+      const parent = nodeToParentGateway[leaf];
+      joinStack.push({
+        note: [leaf],
+        target: parent ? (gatewayIdMap[parent] || parent) : 'end',
+        gateway: leaf,
+        gatewayType: '',
+        order: levels[leaf] || 0,
       });
     }
-  }
+  });
 
-  // 3. Join points (multi-in, same layer)
-  const inMap = new Map<string, string[]>();
-  for (const [from, to] of edges) {
-    if (!inMap.has(to)) inMap.set(to, []);
-    inMap.get(to)!.push(from);
-  }
-  const joinPoints: { node: string, sources: string[], layer: number }[] = [];
-  for (const [node, sources] of inMap.entries()) {
-    if (sources.length > 1) {
-      const sourceLayers = sources.map(s => levels[s]);
-      if (sourceLayers.every(l => l === sourceLayers[0])) {
-        joinPoints.push({ node, sources, layer: sourceLayers[0] });
-      }
-    }
-  }
-
-  // 4. End join (last layer)
-  const maxLevel = Math.max(...Object.values(levels));
-  const lastNodes = Object.entries(levels).filter(([n, l]) => l === maxLevel).map(([n]) => n);
-  let endJoin = null;
-  if (lastNodes.length > 1) {
-    endJoin = { sources: lastNodes, target: 'end', layer: maxLevel };
-  }
-
-  // 5. Build FILO join stack
-  const joinStack: Array<{ nodes: string[], target: string, gateway_type: string, layers: number }> = [];
-  let joinCount = 1;
-
-  // 處理 join points（多來源指向同一個 node）
-  for (const jp of joinPoints) {
-    let gateway_type = 'parallel';
-    let split = null;
-    if (splitStack.length > 0) {
-      split = splitStack.pop();
-      gateway_type = split.type;
-    }
-    joinStack.push({
-      nodes: jp.sources,
-      target: jp.node, // node 為 join 點
-      gateway_type,
-      layers: joinCount++
-    });
-  }
-
-  // 處理 end join（最後一層多個 node 指向 end）
-  if (endJoin) {
-    let gateway_type = 'parallel';
-    let split = null;
-    if (splitStack.length > 0) {
-      split = splitStack.pop();
-      gateway_type = split.type;
-    }
-    joinStack.push({
-      nodes: endJoin.sources, // 最後一層所有 node
-      target: endJoin.target, // 'end'
-      gateway_type,
-      layers: joinCount++
-    });
-  }
-
-  // 處理還沒被 join 的 split（例如流程中間直接 join 到 gateway）
-  while (splitStack.length > 0) {
-    const split = splitStack.pop();
-    // target 設為下一個 gateway（用 split.targets.join(',')），或 'end'（如果已經沒有下一個 node）
-    joinStack.push({
-      nodes: [split.node],
-      target: split.targets.length > 0 ? split.targets.join(',') : 'end',
-      gateway_type: split.type,
-      layers: joinCount++
-    });
-  }
+  // Sort join stack by order (level) descending (FILO)
+  joinStack.sort((a, b) => b.order - a.order);
 
   return {
-    gatewayStack: joinStack,
-    joinPoints,
-    endJoins: endJoin ? [endJoin] : [],
-    levels
+    joinStack,
+    levels,
+    gatewayGroups,
   };
 }
