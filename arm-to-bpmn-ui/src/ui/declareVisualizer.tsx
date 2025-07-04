@@ -4,9 +4,6 @@ import edgeStyles from "./edgeStyle";
 import { getConstraintEdges } from "./constraintMap";
 import { DeclareModel } from "../types/types";
 
-
-
-
 /**
  * A React functional component that visualizes a Declare model using Cytoscape.js.
  *
@@ -50,7 +47,7 @@ const DeclareVisualizer: React.FC = () => {
 
   /**
    * useEffect: When Declare model is loaded, initialize and render the Cytoscape graph.
-   * Handles node creation, constraint edges, "init" markers, shadow nodes, and layout.
+   * Handles node creation, constraint edges, "init" markers, and layout.
    */
   useEffect(() => {
     if (!containerRef.current || !declareModel || !Array.isArray(declareModel.activities)) return;
@@ -119,7 +116,8 @@ const DeclareVisualizer: React.FC = () => {
       });
     }
 
-
+/*
+    ////////////////Limitation of Cytoscape///////////////////
     // Add invisible "shadow" nodes for visual adjustment in chained constraints((i.e. a_left, a_right))
     const shadowNodes: cytoscape.ElementDefinition[] = [];
     declareModel.constraints.forEach((c, i) => {
@@ -130,10 +128,10 @@ const DeclareVisualizer: React.FC = () => {
         );
       }
     });
-
+*/
 
     // Add all node elements
-    cy.add([...nodes, ...shadowNodes, ...initNodes]);
+    cy.add([...nodes, ...initNodes]);
 
 
     // Generate and add edges for Declare constraints
@@ -142,7 +140,7 @@ const DeclareVisualizer: React.FC = () => {
     );
     cy.add([...edges, ...initEdges]);
 
-
+    ////////////////Limitation of Cytoscape///////////////////
     // Add all elements (nodes + edges) to Cytoscape graph
     //cy.add([...nodes, ...shadowNodes, ...edges, ...initNodes, ...initEdges]);
 
@@ -151,22 +149,22 @@ const DeclareVisualizer: React.FC = () => {
     cy.layout({ name: "breadthfirst", directed: true, padding: 10 }).run();
 
 
-    ///////////////////////////////////////////////////////////////
+    ////////////////Limitation of Cytoscape///////////////////
     // Position shadow nodes (if any exist)
-    cy.nodes().forEach(node => {
-      if (node.id().includes("shadow1")) {
-        const target = cy.getElementById(node.id().replace(/-shadow1-.*/, ""));
-        const pos = target.position();
-        node.position({ x: pos.x - 20, y: pos.y });
-      }
-      if (node.id().includes("shadow2")) {
-        const target = cy.getElementById(node.id().replace(/-shadow2-.*/, ""));
-        const pos = target.position();
-        node.position({ x: pos.x + 20, y: pos.y });
-      }
-    });
+    //cy.nodes().forEach(node => {
+      //if (node.id().includes("shadow1")) {
+        //const target = cy.getElementById(node.id().replace(/-shadow1-.*/, ""));
+        //const pos = target.position();
+        //node.position({ x: pos.x - 20, y: pos.y });
+      //}
+      //if (node.id().includes("shadow2")) {
+        //const target = cy.getElementById(node.id().replace(/-shadow2-.*/, ""));
+        //const pos = target.position();
+        //node.position({ x: pos.x + 20, y: pos.y });
+      //}
+   //);
+  
     ////////////////////////////////////////////////////////////////
-
 
     // Position "init" nodes to the upper-left of their target
     cy.nodes(".init-node").forEach(n => {
