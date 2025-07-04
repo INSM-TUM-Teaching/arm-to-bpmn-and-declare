@@ -158,7 +158,7 @@ function BPMN() {
       directDependencies: rawAnalysis.directChains,
       topoOrder: rawAnalysis.topoOrder,
       orRelations: rawAnalysis.orRelations,
-      activityLevels: rawAnalysis.activityLevels
+      //activityLevels: rawAnalysis.activityLevels
     };
 
     // 2. Build BPMN XML from analysis
@@ -174,48 +174,50 @@ function BPMN() {
     setOptionalDependencies(rawAnalysis.optional.map(([a, b]) => [a, b]));
     setTopoOrder(rawAnalysis.topoOrder);
     setOrRelations(rawAnalysis.orRelations);
-
+    {/** 
     // 4. 分析 gateway/join/end join
-    const { joinStack, joinPoints, endJoins, levels } = analyzeGatewaysAndJoins(analysis);
-    setJoinStack(joinStack ?? []);
+    const { gatewayStack, joinPoints, endJoins, levels } = analyzeGatewaysAndJoins(analysis);
+    setJoinStack(gatewayStack);
     setJoinPoints(joinPoints);
     setEndJoins(endJoins);
     setLevelMap(levels);
 
     // 4. 計算 levelMap 並 setState
     const nodes = analysis.activities.slice(); // 複製一份
-const edges = analysis.directDependencies.length
-  ? analysis.directDependencies.slice()
-  : analysis.temporalChains.slice();
+    const edges = analysis.directDependencies.length
+      ? analysis.directDependencies.slice()
+      : analysis.temporalChains.slice();
 
-// 找出 level 0 nodes
-const level0Nodes = nodes.filter(n => levels[n] === 0);
+    // 找出 level 0 nodes
+    const level0Nodes = nodes.filter(n => levels[n] === 0);
 
-// 若沒有 start node，補上
-if (!nodes.includes('start')) nodes.unshift('start');
-// start 指向所有 level 0
-level0Nodes.forEach(n => {
-  if (!edges.some(([from, to]) => from === 'start' && to === n)) {
-    edges.push(['start', n]);
-  }
-});
-setLevelMap(levels);
+    // 若沒有 start node，補上
+    if (!nodes.includes('start')) nodes.unshift('start');
+    // start 指向所有 level 0
+    level0Nodes.forEach(n => {
+      if (!edges.some(([from, to]) => from === 'start' && to === n)) {
+        edges.push(['start', n]);
+      }
+    });
+    setLevelMap(levels);
 
-// 5. 計算 gateway groupings
-const gatewayStrategy = new LayerAwareGatewayStrategy();
-const groupResult: Record<string, any[]> = {};
-for (const node of nodes) {
-  const directTargets = edges
-    .filter(([from]) => from === node)
-    .map(([, to]) => to);
-  const groups = gatewayStrategy.groupSuccessors(node, directTargets, {
-    ...analysis,
-    activityLevels: levels,
-  });
-  groupResult[node] = groups || [];
-}
-setGatewayGroups(groupResult);
-  };
+    // 5. 計算 gateway groupings
+    const gatewayStrategy = new LayerAwareGatewayStrategy();
+    const groupResult: Record<string, any[]> = {};
+    for (const node of nodes) {
+      const directTargets = edges
+        .filter(([from]) => from === node)
+        .map(([, to]) => to);
+      const groups = gatewayStrategy.groupSuccessors(node, directTargets, {
+        ...analysis,
+        activityLevels: levels,
+      });
+      groupResult[node] = groups || [];
+    }
+    setGatewayGroups(groupResult);
+      };
+  */}
+    }
 
   // Function to export BPMN as image
   const exportSVG = async () => {
@@ -429,16 +431,12 @@ const exportPNG = async () => {
               </tr>
             </thead>
             <tbody>
-              {(Array.isArray(joinStack) ? joinStack : []).map((item, i) => (
+              {joinStack.map((item, i) => (
                 <tr key={i}>
-                  <td className="border px-2">
-                    {Array.isArray(item.note)
-                      ? item.note.join(', ')
-                      : (item.note ? String(item.note) : '')}
-                  </td>
-                  <td className="border px-2">{item.target ?? ''}</td>
-                  <td className="border px-2">{item.gatewayType ?? ''}</td>
-                  <td className="border px-2">{item.order ?? ''}</td>
+                  <td className="border px-2">{item.nodes.join(', ')}</td>
+                  <td className="border px-2">{item.target}</td>
+                  <td className="border px-2">{item.gateway_type}</td>
+                  <td className="border px-2">{item.layers}</td>
                 </tr>
               ))}
             </tbody>
@@ -457,13 +455,13 @@ const exportPNG = async () => {
               </tr>
             </thead>
             <tbody>
-              {Array.isArray(joinPoints) ? joinPoints.map((item, i) => (
+              {joinPoints.map((item, i) => (
                 <tr key={i}>
                   <td className="border px-2">{item.node}</td>
                   <td className="border px-2">{item.sources.join(', ')}</td>
                   <td className="border px-2">{item.layer}</td>
                 </tr>
-              )) : null}
+              ))}
             </tbody>
           </table>
         </section>
