@@ -148,7 +148,7 @@ function BPMN() {
   }, [bpmnXml]);
 
   const testLogicFunctions = async () => {
-    const rawAnalysis = buildBPMNModelWithAnalysis(sampleARM4);
+    const rawAnalysis = buildBPMNModelWithAnalysis(sampleARM5);
     const analysis = {
       activities: rawAnalysis.topoOrder,
       temporalChains: rawAnalysis.chains,
@@ -158,6 +158,7 @@ function BPMN() {
       directDependencies: rawAnalysis.directChains,
       topoOrder: rawAnalysis.topoOrder,
       orRelations: rawAnalysis.orRelations,
+      activityLevels: rawAnalysis.activityLevels
     };
 
     // 2. Build BPMN XML from analysis
@@ -349,10 +350,7 @@ const exportPNG = async () => {
               <h3 className="font-medium text-gray-800 mb-1">Optional Dependencies</h3>
               <ul className="text-sm text-gray-700 space-y-1">{optionalDependencies.map(([a, b], i) => <li key={i}>{a} ?→ {b}</li>)}</ul>
             </div>
-            <div>
-              <h3 className="font-medium text-gray-800 mb-1">Topological Order</h3>
-              <ul className="text-sm text-gray-700 space-y-1">{topoOrder.map((node, i) => <li key={i}>{i + 1}. {node}</li>)}</ul>
-            </div>
+           
           </div>
         </section>
 

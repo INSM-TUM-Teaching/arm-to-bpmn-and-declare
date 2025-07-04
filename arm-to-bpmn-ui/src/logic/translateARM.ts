@@ -145,14 +145,6 @@ export function detectParallelRelations(matrix: ARMMatrix): Array<[string, strin
 
         // Only consider parallel if they have common predecessor or successor
         if (hasCommonPredecessor || hasCommonSuccessor) {
-          console.log(
-            "Detected parallel:",
-            a,
-            b,
-            "→",
-            matrix[a]?.[b] ?? "no entry",
-            matrix[b]?.[a] ?? "no entry"
-          );
           parallelPairs.push([a, b]);
         }
       }
