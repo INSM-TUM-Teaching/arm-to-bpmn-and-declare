@@ -176,8 +176,8 @@ function BPMN() {
     setOrRelations(rawAnalysis.orRelations);
 
     // 4. 分析 gateway/join/end join
-    const { gatewayStack, joinPoints, endJoins, levels } = analyzeGatewaysAndJoins(analysis);
-    setJoinStack(gatewayStack);
+    const { joinStack, joinPoints, endJoins, levels } = analyzeGatewaysAndJoins(analysis);
+    setJoinStack(joinStack ?? []);
     setJoinPoints(joinPoints);
     setEndJoins(endJoins);
     setLevelMap(levels);
@@ -429,12 +429,16 @@ const exportPNG = async () => {
               </tr>
             </thead>
             <tbody>
-              {joinStack.map((item, i) => (
+              {(Array.isArray(joinStack) ? joinStack : []).map((item, i) => (
                 <tr key={i}>
-                  <td className="border px-2">{item.nodes.join(', ')}</td>
-                  <td className="border px-2">{item.target}</td>
-                  <td className="border px-2">{item.gateway_type}</td>
-                  <td className="border px-2">{item.layers}</td>
+                  <td className="border px-2">
+                    {Array.isArray(item.note)
+                      ? item.note.join(', ')
+                      : (item.note ? String(item.note) : '')}
+                  </td>
+                  <td className="border px-2">{item.target ?? ''}</td>
+                  <td className="border px-2">{item.gatewayType ?? ''}</td>
+                  <td className="border px-2">{item.order ?? ''}</td>
                 </tr>
               ))}
             </tbody>
@@ -453,13 +457,13 @@ const exportPNG = async () => {
               </tr>
             </thead>
             <tbody>
-              {joinPoints.map((item, i) => (
+              {Array.isArray(joinPoints) ? joinPoints.map((item, i) => (
                 <tr key={i}>
                   <td className="border px-2">{item.node}</td>
                   <td className="border px-2">{item.sources.join(', ')}</td>
                   <td className="border px-2">{item.layer}</td>
                 </tr>
-              ))}
+              )) : null}
             </tbody>
           </table>
         </section>

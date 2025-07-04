@@ -2,12 +2,21 @@ import { useState } from 'react';
 import { translateARMtoDeclare } from '../core/translateARM';
 import { DeclareModel } from '../types/types';
 
+
 export default function ArmToDeclareUI() {
   const [inputJSON, setInputJSON] = useState('');
   const [output, setOutput] = useState<DeclareModel | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Function: Translate ARM to Declare model and POST to backend
+
+  /**
+   * Translates ARM JSON input into a Declare model, updates the output state,
+   * and POST the result to a backend server for persistence.
+   *
+   * @async
+   * @function
+   * @returns {Promise<void>}
+   */
   const handleTranslate = async () => {
     try {
       const parsed = JSON.parse(inputJSON);
@@ -15,12 +24,14 @@ export default function ArmToDeclareUI() {
       setOutput(result);
       setError(null);
 
+
       // Send to backend
       const response = await fetch('http://localhost:5174/api/save-declare-model', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(result),
       });
+
 
       if (!response.ok) throw new Error("Failed to save model to backend");
       alert('Declare model saved and ready to visualize!');
@@ -30,10 +41,18 @@ export default function ArmToDeclareUI() {
     }
   };
 
-  // Handle .json file upload
+
+   /**
+   * Handles uploading a local `.json` file and sets its content as input JSON.
+   *
+   * @function
+   * @param {React.ChangeEvent<HTMLInputElement>} event - File input change event
+   * @returns {void}
+   */
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
 
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -45,7 +64,13 @@ export default function ArmToDeclareUI() {
     reader.readAsText(file);
   };
 
-  // Download translated Declare model to local disk as JSON
+
+   /**
+   * Triggers a download of the translated Declare model to local disk as JSON
+   *
+   * @function
+   * @returns {void}
+   */
   const handleDownload = () => {
     if (!output) return;
     const blob = new Blob([JSON.stringify(output, null, 2)], {
@@ -61,9 +86,11 @@ export default function ArmToDeclareUI() {
     URL.revokeObjectURL(url);
   };
 
+
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">ARM to Declare Translator</h1>
+
 
       <input
         type="file"
@@ -72,6 +99,7 @@ export default function ArmToDeclareUI() {
         onChange={handleFileUpload}
       />
 
+
       <textarea
         className="w-full h-64 p-3 border rounded mb-4"
         placeholder="Paste ARM JSON here or upload a .json file..."
@@ -79,12 +107,14 @@ export default function ArmToDeclareUI() {
         onChange={(e) => setInputJSON(e.target.value)}
       ></textarea>
 
+
       <button
         className="bg-blue-600 text-white px-4 py-2 rounded mr-2"
         onClick={handleTranslate}
       >
         Translate
       </button>
+
 
       {output && (
         <button
@@ -95,7 +125,9 @@ export default function ArmToDeclareUI() {
         </button>
       )}
 
+
       {error && <p className="text-red-600 mt-4 whitespace-pre-wrap">{error}</p>}
+
 
       {output && (
         <div className="mt-6">

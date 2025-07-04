@@ -4,12 +4,31 @@ import edgeStyles from "./edgeStyle";
 import { getConstraintEdges } from "./constraintMap";
 import { DeclareModel } from "../types/types";
 
-const DeclareVisualizer: React.FC = () => {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const cyRef = useRef<cytoscape.Core | null>(null);
-  const [declareModel, setDeclareModel] = useState<DeclareModel | null>(null);
 
-  // Fetch Declare model JSON file from the public directory
+
+
+/**
+ * A React functional component that visualizes a Declare model using Cytoscape.js.
+ *
+ * Features:
+ * - Loads a Declare model JSON file from the public directory.
+ * - Renders activities as nodes and constraints as styled edges.
+ * - Adds visual markers for special constraints (e.g., "init", "chain_precedence").
+ * - Automatically positions nodes using a directed breadth-first layout.
+ * - Allows the user to download the Declare model as JSON or export the graph as PNG.
+ *
+ * @component
+ */
+const DeclareVisualizer: React.FC = () => {
+  const containerRef = useRef<HTMLDivElement | null>(null); //where Cytoscape draw the Declare Model
+  const cyRef = useRef<cytoscape.Core | null>(null);  //instance of the Cytoscape
+  const [declareModel, setDeclareModel] = useState<DeclareModel | null>(null);  //JSON data model
+
+
+  /**
+   * useEffect: Fetch Declare model JSON file from public directory on component mount.
+   * Shows an alert if loading fails.
+   */
   useEffect(() => {
     fetch("/declareModels/temp/declareModel.json")
       .then(res => {
@@ -26,9 +45,16 @@ const DeclareVisualizer: React.FC = () => {
       });
   }, []);
 
-  // When Declare model is loaded, initialize Cytoscape graph
+
+
+
+  /**
+   * useEffect: When Declare model is loaded, initialize and render the Cytoscape graph.
+   * Handles node creation, constraint edges, "init" markers, shadow nodes, and layout.
+   */
   useEffect(() => {
     if (!containerRef.current || !declareModel || !Array.isArray(declareModel.activities)) return;
+
 
     const cy = cytoscape({
       container: containerRef.current,
@@ -55,16 +81,23 @@ const DeclareVisualizer: React.FC = () => {
     });
     cyRef.current = cy;
 
-    // Render nodes from Declare activities
+
+    // Render nodes from Declare activities(Map each activity to a visual node)
     const nodes = declareModel.activities.map(act => ({
       data: { id: act, label: act }
     }));
 
-    const initNodes: cytoscape.ElementDefinition[] = [];
-    const initEdges: cytoscape.ElementDefinition[] = [];
 
+    //Holds the "init" nodes that will be created visually.
+    const initNodes: cytoscape.ElementDefinition[] = [];  
+    //It holds the arrows (edges) going from the “init” node to the activity.
+    const initEdges: cytoscape.ElementDefinition[] = [];  
+
+
+    // Add "init" constraint nodes and their outgoing edges
     if ("unary" in declareModel) {
-      declareModel.unary.forEach((u, idx) => {
+      //It only takes those whose constraint === "init" (meaning this activity is the beginning of the process)
+      declareModel.unary.forEach((u, idx) => {  
         if (u.constraint === "init") {
           const initNodeId = `init-${u.activity}`;
           // Create visual init node
@@ -86,16 +119,54 @@ const DeclareVisualizer: React.FC = () => {
       });
     }
 
-    // Generate styled edges from Declare binary constraints
+
+    // Add invisible "shadow" nodes for visual adjustment in chained constraints((i.e. a_left, a_right))
+    const shadowNodes: cytoscape.ElementDefinition[] = [];
+    declareModel.constraints.forEach((c, i) => {
+      if (c.constraint === "chain_precedence") {
+        shadowNodes.push(
+          { data: { id: `${c.target}_left` }, classes: "shadow-node" },
+          { data: { id: `${c.target}_right` }, classes: "shadow-node" }
+        );
+      }
+    });
+
+
+    // Add all node elements
+    cy.add([...nodes, ...shadowNodes, ...initNodes]);
+
+
+    // Generate and add edges for Declare constraints
     const edges = declareModel.constraints.flatMap((c, i) =>
       getConstraintEdges(c.constraint, c.source, c.target, i)
     );
+    cy.add([...edges, ...initEdges]);
+
 
     // Add all elements (nodes + edges) to Cytoscape graph
-    cy.add([...nodes, ...edges, ...initNodes, ...initEdges]);
+    //cy.add([...nodes, ...shadowNodes, ...edges, ...initNodes, ...initEdges]);
+
 
     // Run layout for automatic node positioning
     cy.layout({ name: "breadthfirst", directed: true, padding: 10 }).run();
+
+
+    ///////////////////////////////////////////////////////////////
+    // Position shadow nodes (if any exist)
+    cy.nodes().forEach(node => {
+      if (node.id().includes("shadow1")) {
+        const target = cy.getElementById(node.id().replace(/-shadow1-.*/, ""));
+        const pos = target.position();
+        node.position({ x: pos.x - 20, y: pos.y });
+      }
+      if (node.id().includes("shadow2")) {
+        const target = cy.getElementById(node.id().replace(/-shadow2-.*/, ""));
+        const pos = target.position();
+        node.position({ x: pos.x + 20, y: pos.y });
+      }
+    });
+    ////////////////////////////////////////////////////////////////
+
 
     // Position "init" nodes to the upper-left of their target
     cy.nodes(".init-node").forEach(n => {
@@ -104,8 +175,10 @@ const DeclareVisualizer: React.FC = () => {
       n.position({ x: pos.x - 30, y: pos.y - 40 });
     });
 
+
     return () => cy.destroy();
   }, [declareModel]);
+
 
   return (
     <div>
@@ -128,6 +201,7 @@ const DeclareVisualizer: React.FC = () => {
           Download JSON
         </button>
 
+
         <button
           onClick={() => {
             if (cyRef.current) {
@@ -147,6 +221,8 @@ const DeclareVisualizer: React.FC = () => {
     </div>
   );
 };
+
+
 
 
 export default DeclareVisualizer;

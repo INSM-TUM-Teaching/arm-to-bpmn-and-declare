@@ -268,13 +268,17 @@ const BatchTestPage: React.FC = () => {
                   </thead>
                   <tbody>
                     {(() => {
-                      const { gatewayStack } = analyzeGatewaysAndJoins(r.analysis);
-                      return gatewayStack.map((item: any, i: number) => (
+                      const { joinStack } = analyzeGatewaysAndJoins(r.analysis);
+                      return (Array.isArray(joinStack) ? joinStack : []).map((item: any, i: number) => (
                         <tr key={i}>
-                          <td className="border px-2">{item.nodes.join(', ')}</td>
-                          <td className="border px-2">{item.target}</td>
-                          <td className="border px-2">{item.gateway_type}</td>
-                          <td className="border px-2">{item.layers}</td>
+                          <td className="border px-2">
+                            {Array.isArray(item.note)
+                              ? item.note.join(', ')
+                              : (item.note ? String(item.note) : '')}
+                          </td>
+                          <td className="border px-2">{item.target ?? ''}</td>
+                          <td className="border px-2">{item.gatewayType ?? ''}</td>
+                          <td className="border px-2">{item.order ?? ''}</td>
                         </tr>
                       ));
                     })()}
@@ -295,15 +299,27 @@ const BatchTestPage: React.FC = () => {
                   </thead>
                   <tbody>
                     {(() => {
-                      const { joinPoints } = analyzeGatewaysAndJoins(r.analysis);
-                      return joinPoints.map((item: any, i: number) => (
-                        <tr key={i}>
-                          <td className="border px-2">{item.node}</td>
-                          <td className="border px-2">{item.sources.join(', ')}</td>
-                          <td className="border px-2">{item.layer}</td>
-                        </tr>
-                      ));
-                    })()}
+                      const { joinStack, levels, gatewayGroups } = analyzeGatewaysAndJoins(r.analysis);
+
+  // 計算 joinPoints
+  const joinPoints = Object.entries(gatewayGroups).flatMap(([gw, groups]) =>
+    (groups || [])
+      .filter(g => g.targets.length > 1)
+      .map(g => ({
+        node: gw,
+        sources: g.targets,
+        layer: levels[gw] ?? 0,
+      }))
+  );
+
+  return joinPoints.map((item: any, i: number) => (
+    <tr key={i}>
+      <td className="border px-2">{item.node}</td>
+      <td className="border px-2">{item.sources.join(', ')}</td>
+      <td className="border px-2">{item.layer}</td>
+    </tr>
+  ));
+})()}
                   </tbody>
                 </table>
               </section>
