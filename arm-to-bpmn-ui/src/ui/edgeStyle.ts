@@ -217,16 +217,6 @@ const edgeStyles: Stylesheet[] = [
             'width': 2
         }
     },
-    {
-        selector: '.shadow-node',
-        style: {
-            'background-opacity': 0,
-            'border-opacity': 0,
-            'label': '',
-            'width': 1,
-            'height': 1
-        }
-    },
    
     // Negative constraint edge (║ symbol)
     {
