@@ -1,9 +1,6 @@
 // Defines reusable Cytoscape.js styles for edges in a ConDec visualizer
 import { Stylesheet } from 'cytoscape';
 
-
-
-
 /**
  * An array of Cytoscape.js stylesheet objects that define the visual appearance of edges
  * in a Declare model visualizer.

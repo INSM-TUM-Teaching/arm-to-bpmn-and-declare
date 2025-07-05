@@ -4,6 +4,7 @@ import edgeStyles from "./edgeStyle";
 import { getConstraintEdges } from "./constraintMap";
 import { DeclareModel } from "../types/types";
 
+
 /**
  * A React functional component that visualizes a Declare model using Cytoscape.js.
  *
@@ -20,6 +21,8 @@ const DeclareVisualizer: React.FC = () => {
   const containerRef = useRef<HTMLDivElement | null>(null); //where Cytoscape draw the Declare Model
   const cyRef = useRef<cytoscape.Core | null>(null);  //instance of the Cytoscape
   const [declareModel, setDeclareModel] = useState<DeclareModel | null>(null);  //JSON data model
+
+
 
 
   /**
@@ -45,12 +48,18 @@ const DeclareVisualizer: React.FC = () => {
 
 
 
+
+
+
+
   /**
    * useEffect: When Declare model is loaded, initialize and render the Cytoscape graph.
    * Handles node creation, constraint edges, "init" markers, and layout.
    */
   useEffect(() => {
     if (!containerRef.current || !declareModel || !Array.isArray(declareModel.activities)) return;
+
+
 
 
     const cy = cytoscape({
@@ -79,16 +88,22 @@ const DeclareVisualizer: React.FC = () => {
     cyRef.current = cy;
 
 
+
+
     // Render nodes from Declare activities(Map each activity to a visual node)
     const nodes = declareModel.activities.map(act => ({
       data: { id: act, label: act }
     }));
 
 
+
+
     //Holds the "init" nodes that will be created visually.
     const initNodes: cytoscape.ElementDefinition[] = [];  
     //It holds the arrows (edges) going from the “init” node to the activity.
     const initEdges: cytoscape.ElementDefinition[] = [];  
+
+
 
 
     // Add "init" constraint nodes and their outgoing edges
@@ -116,6 +131,7 @@ const DeclareVisualizer: React.FC = () => {
       });
     }
 
+
 /*
     ////////////////Limitation of Cytoscape///////////////////
     // Add invisible "shadow" nodes for visual adjustment in chained constraints((i.e. a_left, a_right))
@@ -130,8 +146,11 @@ const DeclareVisualizer: React.FC = () => {
     });
 */
 
+
     // Add all node elements
     cy.add([...nodes, ...initNodes]);
+
+
 
 
     // Generate and add edges for Declare constraints
@@ -140,13 +159,18 @@ const DeclareVisualizer: React.FC = () => {
     );
     cy.add([...edges, ...initEdges]);
 
+
     ////////////////Limitation of Cytoscape///////////////////
     // Add all elements (nodes + edges) to Cytoscape graph
     //cy.add([...nodes, ...shadowNodes, ...edges, ...initNodes, ...initEdges]);
 
 
+
+
     // Run layout for automatic node positioning
     cy.layout({ name: "breadthfirst", directed: true, padding: 10 }).run();
+
+
 
 
     ////////////////Limitation of Cytoscape///////////////////
@@ -163,8 +187,9 @@ const DeclareVisualizer: React.FC = () => {
         //node.position({ x: pos.x + 20, y: pos.y });
       //}
    //);
-  
+ 
     ////////////////////////////////////////////////////////////////
+
 
     // Position "init" nodes to the upper-left of their target
     cy.nodes(".init-node").forEach(n => {
@@ -174,8 +199,12 @@ const DeclareVisualizer: React.FC = () => {
     });
 
 
+
+
     return () => cy.destroy();
   }, [declareModel]);
+
+
 
 
   return (
@@ -200,6 +229,8 @@ const DeclareVisualizer: React.FC = () => {
         </button>
 
 
+
+
         <button
           onClick={() => {
             if (cyRef.current) {
@@ -219,6 +250,10 @@ const DeclareVisualizer: React.FC = () => {
     </div>
   );
 };
+
+
+
+
 
 
 
