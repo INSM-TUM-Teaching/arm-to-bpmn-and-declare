@@ -9,14 +9,9 @@ export default function ArmToDeclareUI() {
   const [error, setError] = useState<string | null>(null);
 
 
-  /**
-   * Translates ARM JSON input into a Declare model, updates the output state,
-   * and POST the result to a backend server for persistence.
-   *
-   * @async
-   * @function
-   * @returns {Promise<void>}
-   */
+  /*
+    Translates ARM JSON input into a Declare model, updates the output state, and POST the result to a backend server for persistence.
+  */
   const handleTranslate = async () => {
     try {
       const parsed = JSON.parse(inputJSON);
@@ -41,14 +36,7 @@ export default function ArmToDeclareUI() {
     }
   };
 
-
-   /**
-   * Handles uploading a local `.json` file and sets its content as input JSON.
-   *
-   * @function
-   * @param {React.ChangeEvent<HTMLInputElement>} event - File input change event
-   * @returns {void}
-   */
+  // Handles uploading a local `.json` file and sets its content as input JSON.
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -65,12 +53,7 @@ export default function ArmToDeclareUI() {
   };
 
 
-   /**
-   * Triggers a download of the translated Declare model to local disk as JSON
-   *
-   * @function
-   * @returns {void}
-   */
+  // Triggers a download of the translated Declare model to local disk as JSON
   const handleDownload = () => {
     if (!output) return;
     const blob = new Blob([JSON.stringify(output, null, 2)], {

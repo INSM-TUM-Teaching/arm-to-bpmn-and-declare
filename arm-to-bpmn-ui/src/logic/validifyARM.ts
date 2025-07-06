@@ -1,84 +1,3 @@
-/**
- * validifyARM.ts – Activity‑Relationship‑Matrix validator
- * ======================================================
- * Purpose
- * -------
- * Ensure that an **Activity Relationship Matrix (ARM)** is *sound* **before** it
- * is handed over to the translation pipeline (TranslateARM → BuildBPMN, etc.).
- * The function stops the pipeline early by throwing an `Error` as soon as it
- * detects the first breach of the domain rules.
- *
- * Supported input shapes
- * ---------------------
- * 1. **Typed object form** *(internal)* – used by `validifyARM` directly.
- *
- *    ```ts
- *    interface ARMMatrix {
- *      [src: string]: {
- *        [tgt: string]: { temporal: '<' | '<d' | '>' | '-' | null;
- *                         existential: '⇒' | '⇐' | '⇔' | '⇎' | '∨' | '∧' | '-' | null };
- *      };
- *    }
- *    ```
- *
- * 2. **Raw JSON form** *(what your project stores on disk)* – a 2‑element array
- *    `[temporal, existential]` for every cell, e.g. the sample below.  Use the
- *    helper `fromRawARM` to convert it to the typed form.
- *
- *    ```jsonc
- *    {
- *      "a": { "b": ["<", "⇔"], "c": ["<", "⇔"] },
- *      "b": { "a": [">", "⇔"], "c": ["-", "⇔"] }
- *    }
- *    ```
- *    Symbol mapping while converting:
- *      • "x" → null (no constraint)
- *      • "<", "<d", "-", ">" stay unchanged
- *
- * Logic enforced
- * --------------
- * For every pair of activities **A** and **B** the validator checks:
- *  1. *Allowed symbols*        – all activity names used in the matrix must be
- *     present in the `allowedActivities` list.
- *  2. *Mutual equivalence*      – if `A ⇔ B` is declared, then `B ⇔ A` *must* be
- *     declared as well (and vice‑versa).
- *  3. *Temporal order clash*    – contradictory orders, e.g. both `A < B` and
- *     `B < A` (or `<d`) are forbidden.
- *  4. *Exclusive vs equivalence*– an exclusive relation `⇎` cannot coexist with
- *     an equivalence `⇔` between the same two activities.
- *  5. *Reciprocal exclusivity*  – exclusivity must be symmetric: `A ⇎ B` implies
- *     `B ⇎ A`.
- *
- * API
- * ---
- * ```ts
- * validifyARM(matrix: ARMMatrix, allowedActivities: string[]): void
- * fromRawARM(raw: RawARMMatrix): ARMMatrix  // helper
- * ```
- *
- * * **matrix / raw**        – the matrix in either typed or raw shape.
- * * **allowedActivities**   – list of symbols regarded as valid in the current
- *   context.
- * * **returns**             – `void` (success path).  The very first detected
- *   violation throws an `Error` with an English message.
- *
- * Minimal end‑to‑end example (reading a *.json* file)
- * --------------------------------------------------
- * ```ts
- * import fs from 'node:fs/promises';
- * import { fromRawARM, validifyARM } from './validifyARM';
- *
- * const rawJson = await fs.readFile('sampleARM.json', 'utf‑8');
- * const rawMatrix = JSON.parse(rawJson) as RawARMMatrix;
- *
- * const matrix = fromRawARM(rawMatrix);            // convert to typed shape
- * const allowed = Object.keys(matrix);             // or any predefined list
- *
- * validifyARM(matrix, allowed);                    // throws on error
- * console.log('Matrix is valid – proceed');
- * ```
- */
-
 import { kahnTopo } from "./translateARM";
 
 export type TemporalRelation = '<' | '<d' | '>' | '-' | null;
@@ -129,13 +48,8 @@ export function fromRawARM(raw: RawARMMatrix): ARMMatrix {
   return arm;
 }
 
-/**
- * Validate an ARM matrix according to the domain rules (see header).
- *
- * @param matrix            – ARM matrix to check (typed shape)
- * @param allowedActivities – list of legal activity symbols
- * @throws Error            – on the first inconsistency found
- */
+// Validate an ARM matrix according to the domain rules (see header).
+
 export function validifyARM(
   matrix: ARMMatrix,
   allowedActivities: string[],

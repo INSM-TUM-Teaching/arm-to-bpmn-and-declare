@@ -1,20 +1,14 @@
 import { layoutProcess } from 'bpmn-auto-layout';
 
-/* ============================================================================
- * TYPES
- * ============================================================================
- */
+//  * The Analysis object represents all the structured information we’ve extracted
+//  * from a higher-level process model (like an ARM matrix or a flowchart).
+//  * It’s the core input for building the BPMN diagram.
 
-/**
- * The Analysis object represents all the structured information we’ve extracted
- * from a higher-level process model (like an ARM matrix or a flowchart).
- * It’s the core input for building the BPMN diagram.
- */
 export type Analysis = {
   activities: string[];
-  temporalChains: [string, string][];  
+  temporalChains: [string, string][];
   exclusiveRelations: [string, string][];
-  parallelRelations: [string, string][];  
+  parallelRelations: [string, string][];
   directDependencies: [string, string][];
   optionalDependencies?: [string, string, 'optional_to' | 'optional_from'][];
   orRelations?: [string, string][];
@@ -22,22 +16,18 @@ export type Analysis = {
   activityLevels?: Record<string, number>;
 };
 
-/* ============================================================================
- * GATEWAY DETECTION — Inference Based on Target Relationships
- * ============================================================================
- */
+// GATEWAY DETECTION — Inference Based on Target Relationships
 
-/**
- * Given a list of targets that an activity branches to, this function figures out
- * what kind of gateway (split logic) is required.
- * 
- * Gateway types:
- * - XOR (exclusive): Only one path can be taken.
- * - AND (parallel): All paths are taken.
- * - OR (inclusive): One or more paths may be taken.
- * 
- * We determine the type by checking the *pairwise* relationships among the targets.
- */
+// Given a list of targets that an activity branches to, this function figures out
+// what kind of gateway (split logic) is required.
+
+// Gateway types:
+// - XOR (exclusive): Only one path can be taken.
+// - AND (parallel): All paths are taken.
+// - OR (inclusive): One or more paths may be taken.
+
+// We determine the type by checking the *pairwise* relationships among the targets.
+
 function inferGatewayTypeFromGroup(
   sources: string[], // Currently unused — could be removed
   targets: string[], // Activities receiving the split
@@ -75,14 +65,14 @@ function inferGatewayTypeFromGroup(
 }
 
 
-/**
- * Determines what kind of gateway to use at the *start* of the process.
- * 
- * When multiple start nodes are detected, we must decide:
- * - Are they mutually exclusive? → XOR split
- * - Are they OR? → inclusive split
- * - Otherwise → parallel split (default)
- */
+
+// Determines what kind of gateway to use at the *start* of the process.
+
+// When multiple start nodes are detected, we must decide:
+// - Are they mutually exclusive? → XOR split
+// - Are they OR? → inclusive split
+// - Otherwise → parallel split (default)
+
 function detectStartGatewayType(
   startNodes: string[], // Activities with no incoming dependencies
   analysis: Analysis
@@ -123,15 +113,9 @@ function detectStartGatewayType(
   return 'parallelGateway';
 }
 
-/* ============================================================================
- * UTILITY FUNCTIONS — Support Traversals, Cleanup, and Control Flow
- * ============================================================================
- */
 
-/**
- * Given multiple starting nodes, this function finds their first common successor
- * (i.e., a node reachable from all of them) by computing reachability sets.
- */
+// UTILITY FUNCTIONS — Support Traversals, Cleanup, and Control Flow
+
 function findConvergingNode(sources: string[], analysis: Analysis): string | null {
   // Helper: returns all reachable nodes from a given start point
   const getReachables = (start: string): Set<string> => {
@@ -158,10 +142,10 @@ function findConvergingNode(sources: string[], analysis: Analysis): string | nul
   return [...reachSets.reduce((a, b) => new Set([...a].filter(x => b.has(x))))][0] ?? null;
 }
 
-/**
- * Removes gateways that are not needed for valid BPMN (e.g., AND/XOR with only one path).
- * This avoids bloated diagrams.
- */
+
+// Removes gateways that are not needed for valid BPMN (e.g., AND/XOR with only one path).
+//  * This avoids bloated diagrams.
+
 function removeUnnecessaryGateways(context: ReturnType<typeof createContext>) {
   const { elements, flows, handledPairs, flowSources, flowTargets } = context;
 
@@ -231,10 +215,10 @@ function removeUnnecessaryGateways(context: ReturnType<typeof createContext>) {
   console.log(`[CLEANUP] Removed ${unnecessaryGateways.length} unnecessary gateways`);
 }
 
-/**
- * Traces a path from 'from' → ... → target and returns the last activity before reaching `target`.
- * Used to determine where to insert join gateways in examples with pathways.
- */
+
+// Traces a path from 'from' → ... → target and returns the last activity before reaching `target`.
+//  * Used to determine where to insert join gateways in examples with pathways.
+
 function findLastBefore(target: string, from: string, analysis: Analysis): string | null {
   let current = from;
 
@@ -247,14 +231,9 @@ function findLastBefore(target: string, from: string, analysis: Analysis): strin
   return current === target ? null : current;
 }
 
-/* ============================================================================
- * FLOW CONTROL HELPERS
- * ============================================================================
- */
+//  FLOW CONTROL HELPERS
+//  Adds an element to the elements map if it doesn't exist.
 
-/**
- * Adds an element to the elements map if it doesn't exist.
- */
 function addElement(
   elements: Map<string, { type: string; name?: string }>,
   id: string,
@@ -266,10 +245,10 @@ function addElement(
   }
 }
 
-/**
- * Adds a flow (edge) from → to between two elements, with protection
- * against duplicates and illegal structures (e.g., multiple flows to a task).
- */
+
+// Adds a flow (edge) from → to between two elements, with protection
+// against duplicates and illegal structures (e.g., multiple flows to a task).
+
 function addFlow(
   from: string,
   to: string,
@@ -301,15 +280,9 @@ function addFlow(
 }
 
 
-/* ============================================================================
- * SPLIT / JOIN CREATION — Insert Gateways Between Activities
- * ============================================================================
- */
+// SPLIT / JOIN CREATION — Insert Gateways Between Activities
+// Inserts a split gateway before multiple targets, and (if needed) a join gateway after them. Handles nested gateway-to-gateway splits recursively.
 
-/**
- * Inserts a split gateway before multiple targets, and (if needed) a join gateway
- * after them. Handles nested gateway-to-gateway splits recursively.
- */
 function createSplitJoin(
   from: string,
   targets: string[],
@@ -379,15 +352,9 @@ function createSplitJoin(
   }
 }
 
-/* ============================================================================
- * RELATION GROUPING — Bundle Related Activities and Create Gateways
- * ============================================================================
- */
+// RELATION GROUPING — Bundle Related Activities and Create Gateways
+// Groups together all related activities (e.g., all mutually parallel or exclusive), and tries to insert a gateway split from their common predecessor.
 
-/**
- * Groups together all related activities (e.g., all mutually parallel or exclusive),
- * and tries to insert a gateway split from their common predecessor.
- */
 function groupRelations(
   pairs: [string, string][], // Relations (e.g., parallel pairs)
   type: 'exclusiveGateway' | 'parallelGateway' | 'inclusiveGateway',
@@ -432,14 +399,8 @@ function groupRelations(
   }
 }
 
-/* ============================================================================
- * CONTEXT SETUP — Initializes the Data Structures for BPMN Generation
- * ============================================================================
- */
-
-/**
- * Creates and returns the initial context needed to track nodes and flows
- */
+// CONTEXT SETUP — Initializes the Data Structures for BPMN Generation
+// Creates and returns the initial context needed to track nodes and flows
 function createContext() {
   return {
     elements: new Map<string, { type: string; name?: string }>(), // All nodes
@@ -452,26 +413,19 @@ function createContext() {
 }
 
 // ---------- Main Function ----------
-/**
- * Main entry point: Builds a complete BPMN diagram from an Analysis object.
- * Handles task creation, gateway insertion, flow generation, and XML formatting.
- */
+// Main entry point: Builds a complete BPMN diagram from an Analysis object.
+//  * Handles task creation, gateway insertion, flow generation, and XML formatting.
+
 export async function buildBPMN(analysis: Analysis): Promise<string> {
   const ctx = createContext();
   const {
     elements, flows, handledPairs, flowSources, flowTargets, joinGatewayFor
   } = ctx;
 
-  /* ============================================================================
-   * STEP 1 — Add Task Elements
-   * ============================================================================
-   */
+  // STEP 1 — Add Task Elements
   analysis.activities.forEach(act => addElement(elements, act, 'task', act));
 
-  /* ============================================================================
-   * STEP 2 — Direct Dependencies & Initial Split Handling
-   * ============================================================================
-   */
+  // STEP 2 — Direct Dependencies & Initial Split Handling
   for (const activity of analysis.activities) {
     const outgoings = analysis.directDependencies
       .filter(([from]) => from === activity)
@@ -487,18 +441,12 @@ export async function buildBPMN(analysis: Analysis): Promise<string> {
     }
   }
 
-  /* ============================================================================
-   * STEP 3 — Handle Special Relations: Parallel, Inclusive (OR), Exclusive (XOR)
-   * ============================================================================
-   */
+  // STEP 3 — Handle Special Relations: Parallel, Inclusive (OR), Exclusive (XOR)
   groupRelations(analysis.parallelRelations, 'parallelGateway', analysis, ctx);
   groupRelations(analysis.orRelations ?? [], 'inclusiveGateway', analysis, ctx);
   groupRelations(analysis.exclusiveRelations, 'exclusiveGateway', analysis, ctx);
 
-  /* ============================================================================
-   * STEP 4 — Add Start Event + Detect Start Gateway if Needed
-   * ============================================================================
-   */
+  // STEP 4 — Add Start Event + Detect Start Gateway if Needed
   addElement(elements, 'StartEvent_1', 'startEvent');
 
   const hasIncoming = new Set(analysis.temporalChains.map(([, to]) => to));
@@ -530,7 +478,7 @@ export async function buildBPMN(analysis: Analysis): Promise<string> {
     const splitId = `${gatewayType}_Split_StartEvent_1`;
     const splitName = gatewayType === 'exclusiveGateway'
       ? 'XOR Split' : gatewayType === 'parallelGateway'
-      ? 'AND Split' : 'OR Split';
+        ? 'AND Split' : 'OR Split';
 
     addElement(elements, splitId, gatewayType, splitName);
     addFlow('StartEvent_1', splitId, elements, flows, handledPairs, flowSources, flowTargets);
@@ -548,7 +496,7 @@ export async function buildBPMN(analysis: Analysis): Promise<string> {
       const joinId = `${gatewayType}_Join_${target}`;
       const joinName = gatewayType === 'exclusiveGateway'
         ? 'XOR Join' : gatewayType === 'parallelGateway'
-        ? 'AND Join' : 'OR Join';
+          ? 'AND Join' : 'OR Join';
 
       addElement(elements, joinId, gatewayType, joinName);
       startNodes.forEach(source => {
@@ -561,10 +509,7 @@ export async function buildBPMN(analysis: Analysis): Promise<string> {
     }
   }
 
-  /* ============================================================================
-   * STEP 5 — Merge Multiple Start Splits under One Gateway (if needed)
-   * ============================================================================
-   */
+  // STEP 5 — Merge Multiple Start Splits under One Gateway (if needed)
   const startSplits = ['exclusiveGateway_Split_StartEvent_1', 'parallelGateway_Split_StartEvent_1', 'inclusiveGateway_Split_StartEvent_1']
     .filter(g => elements.has(g));
 
@@ -580,10 +525,7 @@ export async function buildBPMN(analysis: Analysis): Promise<string> {
     }
   }
 
-  /* ============================================================================
-   * STEP 6 — Add End Event
-   * ============================================================================
-   */
+  // STEP 6 — Add End Event
   addElement(elements, 'EndEvent_1', 'endEvent');
 
   const endNodes = analysis.activities.filter(a =>
@@ -605,16 +547,10 @@ export async function buildBPMN(analysis: Analysis): Promise<string> {
     addFlow(g, 'EndEvent_1', elements, flows, handledPairs, flowSources, flowTargets);
   }
 
-  /* ============================================================================
-   * STEP 7 — Cleanup & Optimization
-   * ============================================================================
-   */
+  // STEP 7 — Cleanup & Optimization
   removeUnnecessaryGateways(ctx);
 
-  /* ============================================================================
-   * STEP 8 — BPMN XML Generation
-   * ============================================================================
-   */
+  // STEP 8 — BPMN XML Generation
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
                   xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"

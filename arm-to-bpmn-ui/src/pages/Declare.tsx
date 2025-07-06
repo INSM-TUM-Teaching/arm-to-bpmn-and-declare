@@ -3,35 +3,13 @@ import { useLocation } from 'react-router-dom';
 import { translateARMtoDeclare } from '../core/translateARM';
 import { DeclareModel } from '../types/types';
 import DeclareVisualizer from '../ui/declareVisualizer';
+import { validateARM } from "../core/validator";
 
-/**
- * DeclarePage Component
- *
- * Purpose:
- *   - This component is responsible for handling an uploaded ARM (Activity Relationship Matrix) JSON file,
- *     converting it into a Declare model, and visualizing it using the DeclareVisualizer component.
- *
- * Input:
- *   - Either receives ARM data from `location.state` (navigated from Home page), OR from a manually uploaded file.
- *
- * Output:
- *   - Displays a visualization of the Declare model based on the ARM input.
- *   - Also sends the converted Declare model to a backend API for saving.
- *
- * Behavior:
- *   - If ARM data is passed via navigation, it is immediately processed.
- *   - If accessed directly, the user is prompted to upload a file manually.
- */
 export default function DeclarePage() {
   const location = useLocation(); // Used to access passed state data from navigation
   const [translated, setTranslated] = useState(false); // Flag to track whether ARM has been translated
   const [declareModel, setDeclareModel] = useState<DeclareModel | null>(null); // The resulting Declare model
 
-  /**
-   * useEffect to process ARM data passed via navigation (e.g. from Home.tsx)
-   * Converts ARM JSON into a DeclareModel using `translateARMtoDeclare`
-   * Then sends the model to the backend and updates the state.
-   */
   useEffect(() => {
     const armData = location.state?.arm; // Check if ARM data was passed via router state
     if (armData) {
@@ -53,20 +31,20 @@ export default function DeclarePage() {
     }
   }, [location.state]);
 
-  /**
-   * Manual fallback method to handle file upload
-   * Triggered when the user uploads an ARM file through the input element
-   * Converts file content to DeclareModel and posts it to backend
-   */
   const handleARMUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const text = await file.text();
 
     const reader = new FileReader();
 
     // When file has been read successfully
     reader.onload = async (ev) => {
       try {
+        const json = JSON.parse(text);
+        if (!validateARM(json)) {
+          return;
+        }
         const armData = JSON.parse(ev.target?.result as string); // Parse JSON content
         const model: DeclareModel = translateARMtoDeclare(armData); // Convert to Declare model
 
@@ -76,11 +54,10 @@ export default function DeclarePage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(model)
         });
-
         setDeclareModel(model);
         setTranslated(true); // Indicate model is ready to be visualized
       } catch (err: any) {
-        alert('Failed to translate ARM: ' + err.message);
+        alert('Invalid ARM: ' + err.message);
       }
     };
 

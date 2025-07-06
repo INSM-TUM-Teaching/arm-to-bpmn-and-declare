@@ -4,36 +4,11 @@ import edgeStyles from "./edgeStyle"; // Custom styles for edges in the graph
 import { getConstraintEdges } from "./constraintMap"; // Function to generate visual edges based on Declare constraints
 import { DeclareModel } from "../types/types"; // Type definition for the Declare model
 
-
 // Props type: expects a parsed Declare model
 type Props = {
   declareModel: DeclareModel;
 };
 
-
-/**
- * DeclareVisualizer Component
- *
- * Purpose:
- *   - Visualizes a Declare model using Cytoscape.js.
- *   - Renders activities as nodes and constraints as edges.
- *   - Allows exporting the model as JSON and the graph as PNG.
- *
- * Input:
- *   - declareModel: A DeclareModel object containing:
- *       - activities: string[] - list of activity names
- *       - constraints: Declare constraints (e.g., precedence, response, etc.)
- *       - optional unary constraints like "init"
- *
- * Output:
- *   - A graph visualization rendered in a <div> using Cytoscape
- *   - Buttons to export:
- *       - JSON file of the Declare model
- *       - PNG image of the graph
- *
- * Props:
- *   @param {DeclareModel} declareModel - the model to be visualized
- */
 const DeclareVisualizer: React.FC<Props> = ({ declareModel }) => {
   const containerRef = useRef<HTMLDivElement | null>(null); // Reference to the DOM container where the graph will render
   const cyRef = useRef<cytoscape.Core | null>(null); // Reference to the Cytoscape instance (the graph engine)
@@ -73,10 +48,9 @@ const DeclareVisualizer: React.FC<Props> = ({ declareModel }) => {
             'text-valign': 'top',                    // Show label above the node
             'text-halign': 'center',
             'background-color': '#ffffff',           // White background
-            'border-color': '#333',
-            'border-width': 1.5,
-            'font-size': 10,
-            'text-margin-y': -10                     // Pull label upward
+            'border-width': 0,
+            'font-size': 18,
+            'text-margin-y': -2                     // Pull label upward
           }
         },
         ...edgeStyles // Add custom edge styles
@@ -105,7 +79,7 @@ const DeclareVisualizer: React.FC<Props> = ({ declareModel }) => {
 
           // Create a new "init" node visually linked to the actual activity
           initNodes.push({
-            data: { id: initNodeId},
+            data: { id: initNodeId },
             position: { x: 0, y: 0 }, // Initial position; will be adjusted later
             classes: "init-node"
           });
@@ -201,7 +175,7 @@ const DeclareVisualizer: React.FC<Props> = ({ declareModel }) => {
       {/* Container for Cytoscape graph */}
       <div
         ref={containerRef}
-        style={{ width: "100%", height: "700px", border: "1px solid #ccc" }}
+        style={{ width: "100%", height: "700px", border: "1px solid #ccc", backgroundColor: 'white' }}
       />
     </div>
   );

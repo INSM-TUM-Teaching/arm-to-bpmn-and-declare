@@ -1,7 +1,7 @@
-/**  Topological order (Kahn 1962).
- *    V  : list of node IDs  (string | number)
- *    E  : array of directed edges  [u, v]   u -> v
- *    cmp: optional tie-breaker   (a,b) => a < b ? -1 : 1   */
+// Topological order (Kahn 1962).
+// V  : list of node IDs  (string | number)
+// E  : array of directed edges  [u, v]   u -> v
+// cmp: optional tie-breaker   (a,b) => a < b ? -1 : 1   */
 export function kahnTopo<V extends string | number>(
   V: V[],
   E: Array<[V, V]>,
@@ -45,7 +45,7 @@ export function kahnTopo<V extends string | number>(
 // or ts-graph both expose
 // alg.topsort(), but the snippet above avoids any extra download.
 
-// below is a simple example of how I 
+// below is a simple example of how I
 
 // would use the kahnTopo function in a BPMN context
 // to order activities based on their precedence relations
