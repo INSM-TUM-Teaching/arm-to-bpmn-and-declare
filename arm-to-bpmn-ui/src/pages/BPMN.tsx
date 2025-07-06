@@ -1,13 +1,13 @@
 import { useEffect, useState, useRef } from 'react';
 import { buildBPMN } from '../logic/buildBPMN';
-import { AdvancedLevelStrategy } from '../logic/AdvancedLevelStrategy';
+import { AdvancedLevelStrategy } from '../logic/other logics/AdvancedLevelStrategy';
 import { buildBPMNModelWithAnalysis } from '../logic/buildBPMNModelWithAnalysis';
 import type { ARMMatrix } from '../logic/translateARM';
 import BpmnViewer from 'bpmn-js/lib/NavigatedViewer';
-import { AdvancedGatewayStrategy } from '../logic/AdvancedGatewayStrategy';
+import { AdvancedGatewayStrategy } from '../logic/other logics/AdvancedGatewayStrategy';
 import { FiDownload } from 'react-icons/fi';
-import { LayerAwareGatewayStrategy } from '../logic/LayerAwareGatewayStrategy';
-import { analyzeGatewaysAndJoins } from '../logic/analyzeGatewaysAndJoins';
+import { LayerAwareGatewayStrategy } from '../logic/other logics/LayerAwareGatewayStrategy';
+import { analyzeGatewaysAndJoins } from '../logic/other logics/analyzeGatewaysAndJoins';
 
 //import sampleARMJson from './data/sampleARM1.json';
 
@@ -19,14 +19,14 @@ const sampleARM3: ARMMatrix = {
   b: { a: [">d", "⇒"], b: ["x", "x"], c: ["<d", "⇔"], d: ["<", "⇒"], e: ["-", "⇎"] },
   c: { a: [">", "⇒"], b: [">d", "⇔"], c: ["x", "x"], d: ["<d", "⇒"], e: ["-", "⇎"] },
   d: { a: [">", "⇔"], b: [">", "⇐"], c: [">d", "⇐"], d: ["x", "x"], e: [">d", "⇐"] },
-  e: { a: [">d", "⇒"], b: ["-", "⇎"], c: ["-", "⇎"], d: ["<d", "⇒"], e: ["x", "x"]}
-};  
+  e: { a: [">d", "⇒"], b: ["-", "⇎"], c: ["-", "⇎"], d: ["<d", "⇒"], e: ["x", "x"] }
+};
 
 
 // //very simple example with no gateways
 const sampleARM0: ARMMatrix = {
-  a: { a:["x","x"], b: ["<d","⇔"]},
-  b: { a:[">d","⇔"], b:["x","x"]}
+  a: { a: ["x", "x"], b: ["<d", "⇔"] },
+  b: { a: [">d", "⇔"], b: ["x", "x"] }
 }
 
 
@@ -36,20 +36,20 @@ const sampleARM1: ARMMatrix = {
   b: { a: [">d", "⇒"], b: ["x", "x"], c: ["-", "⇎"], d: ["<d", "⇒"] },
   c: { a: [">d", "⇒"], b: ["-", "⇎"], c: ["x", "x"], d: ["<d", "⇒"] },
   d: { a: [">", "⇔"], b: [">d", "⇐"], c: [">d", "⇐"], d: ["x", "x"] },
-}; 
+};
 
 // //simple exclusive gateway sample 2 with more activites 
 const sampleARM2: ARMMatrix = {
-  a: { a: ["x", "x"], b: ["<d", "⇔"], c: ["<", "⇐"], d: ["<", "⇐"],e: ["<", "⇔"] },
+  a: { a: ["x", "x"], b: ["<d", "⇔"], c: ["<", "⇐"], d: ["<", "⇐"], e: ["<", "⇔"] },
   b: { a: [">d", "⇔"], b: ["x", "x"], c: ["<d", "⇐"], d: ["<d", "⇐"], e: ["<", "⇔"] },
-  c: { a: [">", "⇒"], b: [">d", "⇒"], c: ["x", "x"], d: ["-", "⇎"],e: ["<d", "⇒"] },
-  d: { a: [">", "⇒"], b: [">d", "⇒"], c: ["-", "⇎"], d: ["x", "x"],e: ["<d", "⇒"] },
-  e: { a: [">", "⇔"], b: [">", "⇔"], c: [">d", "⇐"], d: [">d", "⇐"], e: ["x", "x"] } ,
+  c: { a: [">", "⇒"], b: [">d", "⇒"], c: ["x", "x"], d: ["-", "⇎"], e: ["<d", "⇒"] },
+  d: { a: [">", "⇒"], b: [">d", "⇒"], c: ["-", "⇎"], d: ["x", "x"], e: ["<d", "⇒"] },
+  e: { a: [">", "⇔"], b: [">", "⇔"], c: [">d", "⇐"], d: [">d", "⇐"], e: ["x", "x"] },
 }
 
 //1st page example of kerstin's paper on the right
 const sampleARM5: ARMMatrix = {
-  a: { a: ["x", "x"], b: [">", "⇐"], c: ["-", "⇔"], d: ["<", "⇔"],e: [">", "⇐"] },
+  a: { a: ["x", "x"], b: [">", "⇐"], c: ["-", "⇔"], d: ["<", "⇔"], e: [">", "⇐"] },
   b: { a: ["<", "⇒"], b: ["x", "x"], c: ["-", "⇒"], d: ["<", "⇒"], e: ["-", "⇎"] },
   c: { a: ["-", "⇔"], b: ["-", "⇐"], c: ["x", "x"], d: ["<", "⇔"], e: ["-", "⇐"] },
   d: { a: [">", "⇔"], b: [">", "⇐"], c: [">", "⇔"], d: ["x", "x"], e: [">", "⇐"] },
@@ -59,26 +59,26 @@ const sampleARM5: ARMMatrix = {
 // //simple exclusive example with 3 activites/branches
 const sampleARM6: ARMMatrix = {
   "a": { "a": ["x", "x"], "b": ["<d", "⇐"], "c": ["<d", "⇐"], "d": ["<d", "⇐"], "e": ["<", "⇔"] },
-  "b": { "a": [">d", "⇒"], "b": ["x", "x"],  "c": ["-", "⇎"], "d": ["-", "⇎"], "e": ["<d", "⇒"] }, 
-  "c": { "a": [">d", "⇒"], "b": ["-", "⇎"],  "c": ["x", "x"], "d": ["-", "⇎"], "e": ["<d", "⇒"] },
-  "d": { "a": [">d", "⇒"], "b": ["-", "⇎"],  "c": ["-", "⇎"], "d": ["x", "x"], "e": ["<d", "⇒"] },
-  "e": { "a": [">", "⇔"], "b": [">d", "⇐"],  "c": [">d", "⇐"], "d": [">d", "⇐"], "e": ["x", "x"] }
+  "b": { "a": [">d", "⇒"], "b": ["x", "x"], "c": ["-", "⇎"], "d": ["-", "⇎"], "e": ["<d", "⇒"] },
+  "c": { "a": [">d", "⇒"], "b": ["-", "⇎"], "c": ["x", "x"], "d": ["-", "⇎"], "e": ["<d", "⇒"] },
+  "d": { "a": [">d", "⇒"], "b": ["-", "⇎"], "c": ["-", "⇎"], "d": ["x", "x"], "e": ["<d", "⇒"] },
+  "e": { "a": [">", "⇔"], "b": [">d", "⇐"], "c": [">d", "⇐"], "d": [">d", "⇐"], "e": ["x", "x"] }
 }
 
 //simple parallel example
 const sampleARM: ARMMatrix = {
-  "a": { "a": ["x", "x"], "b": ["<", "⇔"],"c": ["<", "⇔"], "d": ["<", "⇔"]},
-  "b": { "a": [">", "⇔"], "b": ["x", "x"], "c": ["-", "⇔"], "d": ["<", "⇔"]},
-  "c": { "a": [">", "⇔"], "b": ["-", "⇔"], "c": ["x", "x"], "d": ["<", "⇔"]},
-  "d": { "a": [">", "⇔"], "b": [">", "⇔"], "c": [">", "⇔"], "d": ["x", "x"]}
+  "a": { "a": ["x", "x"], "b": ["<", "⇔"], "c": ["<", "⇔"], "d": ["<", "⇔"] },
+  "b": { "a": [">", "⇔"], "b": ["x", "x"], "c": ["-", "⇔"], "d": ["<", "⇔"] },
+  "c": { "a": [">", "⇔"], "b": ["-", "⇔"], "c": ["x", "x"], "d": ["<", "⇔"] },
+  "d": { "a": [">", "⇔"], "b": [">", "⇔"], "c": [">", "⇔"], "d": ["x", "x"] }
 };
 
 //complex parallel + inclusive example
 const sampleARM4: ARMMatrix = {
-  "a": { "a": ["x", "x"], "b": ["<", "⇔"],"c": ["<", "⇔"], "d": ["-", "∨"]},
-  "b": { "a": [">", "⇔"], "b": ["x", "x"], "c": ["-", "⇔"], "d": ["-", "∨"]},
-  "c": { "a": [">", "⇔"], "b": ["-", "⇔"], "c": ["x", "x"], "d": ["-", "∨"]},
-  "d": { "a": ["-", "∨"], "b": ["-", "∨"], "c": ["-", "∨"], "d": ["x", "x"]}
+  "a": { "a": ["x", "x"], "b": ["<", "⇔"], "c": ["<", "⇔"], "d": ["-", "∨"] },
+  "b": { "a": [">", "⇔"], "b": ["x", "x"], "c": ["-", "⇔"], "d": ["-", "∨"] },
+  "c": { "a": [">", "⇔"], "b": ["-", "⇔"], "c": ["x", "x"], "d": ["-", "∨"] },
+  "d": { "a": ["-", "∨"], "b": ["-", "∨"], "c": ["-", "∨"], "d": ["x", "x"] }
 };
 
 
@@ -144,7 +144,7 @@ function BPMN() {
       //for exporting as image
       viewerInstance.current = viewer;
     }
-    
+
   }, [bpmnXml]);
 
   const testLogicFunctions = async () => {
@@ -174,26 +174,27 @@ function BPMN() {
     setOptionalDependencies(rawAnalysis.optional.map(([a, b]) => [a, b]));
     setTopoOrder(rawAnalysis.topoOrder);
     setOrRelations(rawAnalysis.orRelations);
-    {/** 
-    // 4. 分析 gateway/join/end join
+    {
+      /*
+    // 4. Analyze gateway/join/end join
     const { gatewayStack, joinPoints, endJoins, levels } = analyzeGatewaysAndJoins(analysis);
     setJoinStack(gatewayStack);
     setJoinPoints(joinPoints);
     setEndJoins(endJoins);
     setLevelMap(levels);
 
-    // 4. 計算 levelMap 並 setState
-    const nodes = analysis.activities.slice(); // 複製一份
+    // 4. Calculate levelMap and setState
+    const nodes = analysis.activities.slice(); // Create a copy
     const edges = analysis.directDependencies.length
       ? analysis.directDependencies.slice()
       : analysis.temporalChains.slice();
 
-    // 找出 level 0 nodes
+    // Find level 0 nodes
     const level0Nodes = nodes.filter(n => levels[n] === 0);
 
-    // 若沒有 start node，補上
+    // If there's no start node, add one
     if (!nodes.includes('start')) nodes.unshift('start');
-    // start 指向所有 level 0
+    // start points to all level 0 nodes
     level0Nodes.forEach(n => {
       if (!edges.some(([from, to]) => from === 'start' && to === n)) {
         edges.push(['start', n]);
@@ -201,7 +202,7 @@ function BPMN() {
     });
     setLevelMap(levels);
 
-    // 5. 計算 gateway groupings
+    // 5. gateway groupings
     const gatewayStrategy = new LayerAwareGatewayStrategy();
     const groupResult: Record<string, any[]> = {};
     for (const node of nodes) {
@@ -216,8 +217,9 @@ function BPMN() {
     }
     setGatewayGroups(groupResult);
       };
-  */}
+  */
     }
+  }
 
   // Function to export BPMN as image
   const exportSVG = async () => {
@@ -237,8 +239,8 @@ function BPMN() {
     }
   };
 
-const exportPNG = async () => {
-  if (!viewerInstance.current) return;
+  const exportPNG = async () => {
+    if (!viewerInstance.current) return;
     try {
       const { svg } = await viewerInstance.current.saveSVG();
 
@@ -298,7 +300,7 @@ const exportPNG = async () => {
               className="flex gap-2 items-center bg-purple-600 text-white px-4 py-2 rounded shadow hover:bg-purple-700"
             >
               Export BPMN XML
-              <FiDownload/>
+              <FiDownload />
             </button>
           )}
           {/**export as image */}
@@ -309,14 +311,14 @@ const exportPNG = async () => {
                 className="flex gap-2 items-center bg-purple-600 text-white px-4 py-2 rounded shadow hover:bg-purple-700"
               >
                 Export as SVG
-                <FiDownload/>
+                <FiDownload />
               </button>
               <button
                 onClick={exportPNG}
                 className="flex gap-2 items-center bg-purple-600 text-white px-4 py-2 rounded shadow hover:bg-purple-700"
               >
                 Export as PNG
-                <FiDownload/>
+                <FiDownload />
               </button>
             </div>
           )}
@@ -352,7 +354,7 @@ const exportPNG = async () => {
               <h3 className="font-medium text-gray-800 mb-1">Optional Dependencies</h3>
               <ul className="text-sm text-gray-700 space-y-1">{optionalDependencies.map(([a, b], i) => <li key={i}>{a} ?→ {b}</li>)}</ul>
             </div>
-           
+
           </div>
         </section>
 
@@ -407,10 +409,10 @@ const exportPNG = async () => {
                     {groups.length === 0
                       ? <span className="text-gray-400">-</span>
                       : groups.map((g, i) => (
-                          <div key={i}>
-                            <b>{g.type}:</b> {g.targets.join(', ')}
-                          </div>
-                        ))}
+                        <div key={i}>
+                          <b>{g.type}:</b> {g.targets.join(', ')}
+                        </div>
+                      ))}
                   </td>
                 </tr>
               ))}

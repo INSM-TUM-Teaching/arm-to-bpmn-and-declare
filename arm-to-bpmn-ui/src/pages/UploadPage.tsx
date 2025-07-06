@@ -3,6 +3,7 @@ import { buildBPMN } from "../logic/buildBPMN";
 import { buildBPMNModelWithAnalysis } from "../logic/buildBPMNModelWithAnalysis";
 import { BpmnViewer } from "../components/BpmnViewer";
 import type { ARMMatrix } from "../logic/translateARM";
+import { validateARM } from "../core/validator";
 
 const UploadPage: React.FC = () => {
   const [matrix, setMatrix] = useState<ARMMatrix | null>(null);
@@ -20,11 +21,14 @@ const UploadPage: React.FC = () => {
     const text = await file.text();
     try {
       const json = JSON.parse(text);
+      if (!validateARM(json)) {
+        return;
+      }
       setMatrix(json);
       setAnalysis(null);
       setBpmnXml("");
-    } catch (err) {
-      alert("Invalid JSON file.");
+    } catch (err: any) {
+      alert('Invalid ARM: ' + err.message);
     }
   };
 

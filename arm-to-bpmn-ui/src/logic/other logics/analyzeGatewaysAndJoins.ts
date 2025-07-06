@@ -1,46 +1,44 @@
-/**
- * analyzeGatewaysAndJoins
- *
- * This function analyzes a process model (given as an Analysis object) and computes:
- *   - Node levels (distance from the start node)
- *   - Gateway groupings (splits and their grouped successors)
- *   - Join stack (merge points for branches, including gateway and leaf joins)
- *
- * Algorithm steps:
- * 1. Compute activity levels for all nodes.
- * 2. Ensure a 'start' node exists and connect it to all level-0 nodes.
- * 3. Use LayerAwareGatewayStrategy to group successors for each split node.
- * 4. Build a mapping from gateway IDs to semantic IDs (e.g., 'parallel', 'or').
- * 5. Build a mapping from each node to its parent gateway.
- * 6. Identify all leaf nodes (nodes without successors).
- * 7. Construct the join stack:
- *    - For each gateway, create a join entry for its grouped branches.
- *    - For each leaf node not already part of a gateway group, create a join entry.
- * 8. Sort the join stack by level (FILO order).
- *
- * # Input
- * - analysis: An object with at least the following fields:
- *   - activities: string[]; // All node names
- *   - temporalChains: [string, string][]; // Fallback edges if directDependencies is empty
- *   - directDependencies: [string, string][]; // Edges between nodes
- *   - (other fields may be present and are passed to the grouping strategy)
- *
- * # Output
- * Returns an object:
- * {
- *   joinStack: Array<{
- *     note: string[];      // Branch nodes to be joined
- *     target: string;      // The node to connect after merging
- *     gateway: string;     // Gateway id
- *     gatewayType: string; // Gateway type ('parallel', 'exclusive', 'or', or '')
- *     order: number;       // Level/order for sorting (higher = closer to end)
- *   }>,
- *   levels: Record<string, number>; // Node name to level mapping
- *   gatewayGroups: Record<string, Array<{ type: string; targets: string[] }>>;
- * }
- *
- * This is used for BPMN/Declare translation and visualization.
- */
+//  * analyzeGatewaysAndJoins
+//  *
+//  * This function analyzes a process model (given as an Analysis object) and computes:
+//  *   - Node levels (distance from the start node)
+//  *   - Gateway groupings (splits and their grouped successors)
+//  *   - Join stack (merge points for branches, including gateway and leaf joins)
+//  *
+//  * Algorithm steps:
+//  * 1. Compute activity levels for all nodes.
+//  * 2. Ensure a 'start' node exists and connect it to all level-0 nodes.
+//  * 3. Use LayerAwareGatewayStrategy to group successors for each split node.
+//  * 4. Build a mapping from gateway IDs to semantic IDs (e.g., 'parallel', 'or').
+//  * 5. Build a mapping from each node to its parent gateway.
+//  * 6. Identify all leaf nodes (nodes without successors).
+//  * 7. Construct the join stack:
+//  *    - For each gateway, create a join entry for its grouped branches.
+//  *    - For each leaf node not already part of a gateway group, create a join entry.
+//  * 8. Sort the join stack by level (FILO order).
+//  *
+//  * # Input
+//  * - analysis: An object with at least the following fields:
+//  *   - activities: string[]; // All node names
+//  *   - temporalChains: [string, string][]; // Fallback edges if directDependencies is empty
+//  *   - directDependencies: [string, string][]; // Edges between nodes
+//  *   - (other fields may be present and are passed to the grouping strategy)
+//  *
+//  * # Output
+//  * Returns an object:
+//  * {
+//  *   joinStack: Array<{
+//  *     note: string[];      // Branch nodes to be joined
+//  *     target: string;      // The node to connect after merging
+//  *     gateway: string;     // Gateway id
+//  *     gatewayType: string; // Gateway type ('parallel', 'exclusive', 'or', or '')
+//  *     order: number;       // Level/order for sorting (higher = closer to end)
+//  *   }>,
+//  *   levels: Record<string, number>; // Node name to level mapping
+//  *   gatewayGroups: Record<string, Array<{ type: string; targets: string[] }>>;
+//  * }
+//  *
+//  * This is used for BPMN/Declare translation and visualization.
 
 import { AdvancedLevelStrategy } from './AdvancedLevelStrategy';
 import { LayerAwareGatewayStrategy } from './LayerAwareGatewayStrategy';
@@ -93,6 +91,9 @@ export function analyzeGatewaysAndJoins(analysis: Analysis) {
     const succ = edges.filter(([from]) => from === n).map(([, to]) => to);
     const groups = gatewayStrategy.groupSuccessors(n, succ, {
       ...analysis,
+      exclusiveRelations: (analysis as any).exclusiveRelations ?? [],
+      parallelRelations: (analysis as any).parallelRelations ?? [],
+      orRelations: (analysis as any).orRelations ?? [],
       activityLevels: levels,
     });
     if (groups?.length) gatewayGroups[n] = groups;

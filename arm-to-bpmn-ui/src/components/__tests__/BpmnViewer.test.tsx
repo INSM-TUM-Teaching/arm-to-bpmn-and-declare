@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { BpmnViewer } from '../BpmnViewer';
 import '@testing-library/jest-dom';
 import BpmnJS from 'bpmn-js';
@@ -20,8 +20,8 @@ describe('BpmnViewer', () => {
     '<definitions id="sample" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"></definitions>';
 
   it('renders the container div', () => {
-    render(<BpmnViewer xml={dummyXml} />);
-    const container = screen.getByRole('region');
+    const { getByRole } = render(<BpmnViewer xml={dummyXml} />);
+    const container = getByRole('region');
     expect(container).toBeInTheDocument();
   });
 

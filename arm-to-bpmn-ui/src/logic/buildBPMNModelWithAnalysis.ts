@@ -11,23 +11,17 @@ import {
 
 import type { ARMMatrix } from './translateARM';
 
-/**
- * Analyzes an ARM (Activity Relationship Matrix) and prepares a structured
- * representation to support BPMN model generation.
- * 
- * The function extracts:
- * - Temporal chains (strict ordering)
- * - Topological order of nodes
- * - Index map (node => position)
- * - Exclusive relations (mutual exclusion)
- * - Parallel relations (independent flows with common target)
- * - Optional relations (inclusive/existential conditions)
- * 
- * @param matrix - ARMMatrix representing temporal and existential relations
- * @returns An object containing analysis results used in BPMN generation
- */
 
+// Analyzes an ARM (Activity Relationship Matrix) and prepares a structured
+// representation to support BPMN model generation.
 
+// The function extracts:
+// - Temporal chains (strict ordering)
+// - Topological order of nodes
+// - Index map (node => position)
+// - Exclusive relations (mutual exclusion)
+// - Parallel relations (independent flows with common target)
+// - Optional relations (inclusive/existential conditions)
 export function buildBPMNModelWithAnalysis(matrix: ARMMatrix) {
   // Extract list of all activity nodes
   const nodes = Object.keys(matrix);
@@ -50,7 +44,9 @@ export function buildBPMNModelWithAnalysis(matrix: ARMMatrix) {
   const directChains = extractDirectTemporal(matrix);
 
   // Return all computed relations and orderings for downstream use
+  // Include both the original names and the Analysis-compatible names
   return {
+    // Original property names for backward compatibility
     chains,
     topoOrder,
     indexMap,
@@ -59,5 +55,13 @@ export function buildBPMNModelWithAnalysis(matrix: ARMMatrix) {
     directChains,
     optional,
     orRelations,
+
+    // Analysis-compatible property names
+    activities: topoOrder,
+    temporalChains: chains,
+    exclusiveRelations: exclusive,
+    parallelRelations: parallel,
+    optionalDependencies: optional,
+    directDependencies: directChains,
   };
 }

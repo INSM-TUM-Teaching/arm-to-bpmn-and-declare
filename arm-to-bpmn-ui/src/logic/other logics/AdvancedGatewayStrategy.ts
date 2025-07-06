@@ -1,26 +1,25 @@
 // AdvancedGatewayStrategy.ts
 import type { GatewayGroupingStrategy } from './StrategyTypes';
-import  type { Analysis } from './translateARM';
+import  type { Analysis } from '../buildBPMN';
 
-/**
- * AdvancedGatewayStrategy
- * -----------------------
- * Splits a node’s direct successors into groups that dictate which BPMN
- * gateway should be used:
- *   • ‘exclusive’ → XOR  (mutually exclusive group)
- *   • ‘parallel’  → AND  (fully parallel group)
- *
- * It detects mutually-exclusive successors first; any remaining successors
- * are treated as parallel.  Returned structure:
- *
- *   [
- *     { type: 'exclusive', targets: ['B', 'C'] },
- *     { type: 'parallel',  targets: ['D']       }
- *   ]
- *
- * If `null` is returned, caller should fall back to legacy logic.
- * (Inclusive/OR gateways can be added later by extending this strategy.)
- */
+//  * AdvancedGatewayStrategy
+//  * -----------------------
+//  * Splits a node’s direct successors into groups that dictate which BPMN
+//  * gateway should be used:
+//  *   • ‘exclusive’ → XOR  (mutually exclusive group)
+//  *   • ‘parallel’  → AND  (fully parallel group)
+//  *
+//  * It detects mutually-exclusive successors first; any remaining successors
+//  * are treated as parallel.  Returned structure:
+//  *
+//  *   [
+//  *     { type: 'exclusive', targets: ['B', 'C'] },
+//  *     { type: 'parallel',  targets: ['D']       }
+//  *   ]
+//  *
+//  * If `null` is returned, caller should fall back to legacy logic.
+//  * (Inclusive/OR gateways can be added later by extending this strategy.)
+
 export class AdvancedGatewayStrategy implements GatewayGroupingStrategy {
   groupSuccessors(
     node: string,

@@ -6,14 +6,13 @@ export type ExistentialRelation = "⇔" | "⇎" | "⇒" | "⇐" | "∨" | "¬∧
 // Each key is an activity, mapping to other activities with a [TemporalRelation, ExistentialRelation] tuple
 export type ARMMatrix = Record<string, Record<string, [TemporalRelation, ExistentialRelation]>>;
 
-/**
- * Perform topological sorting using Kahn's algorithm.
- * - V: list of nodes
- * - E: list of directed edges [from, to]
- * - cmp: optional comparator for sorting the zero-indegree nodes
- * 
- * Throws an error if a cycle is detected.
- */
+
+// Perform topological sorting using Kahn's algorithm.
+// V: list of nodes
+// E: list of directed edges [from, to]
+// cmp: optional comparator for sorting the zero-indegree nodes
+// Throws an error if a cycle is detected.
+
 export function kahnTopo<V extends string | number>(
   V: V[],
   E: Array<[V, V]>,
@@ -63,10 +62,10 @@ export function kahnTopo<V extends string | number>(
   return out;
 }
 
-/**
- * Extract direct temporal chains from the ARM matrix.
- * Includes relations where one activity strictly precedes another: '<' or '<d'.
- */
+
+// Extract direct temporal chains from the ARM matrix.
+// Includes relations where one activity strictly precedes another: '<' or '<d'.
+
 export function extractTemporalChains(matrix: ARMMatrix): Array<[string, string]> {
   const chains: Array<[string, string]> = [];
   for (const from in matrix) {
@@ -80,10 +79,9 @@ export function extractTemporalChains(matrix: ARMMatrix): Array<[string, string]
   return chains;
 }
 
-/**
- * Detect exclusive relationships between activities.
- * Looks for existential relations that imply exclusivity: ⇎, ∨, ¬
- */
+// Detect exclusive relationships between activities.
+// Looks for existential relations that imply exclusivity: ⇎, ∨, ¬
+
 export function detectExclusiveRelations(matrix: ARMMatrix): Array<[string, string]> {
   const exclusives: Array<[string, string]> = [];
   const keys = Object.keys(matrix);
@@ -93,7 +91,7 @@ export function detectExclusiveRelations(matrix: ARMMatrix): Array<[string, stri
       const a = keys[i];
       const b = keys[j];
       const exist = matrix[a]?.[b]?.[1] || matrix[b]?.[a]?.[1];
-     // if (["⇎", "∨", "¬"].includes(exist)) {
+      // if (["⇎", "∨", "¬"].includes(exist)) {
       if (["⇎", "¬"].includes(exist)) {
         exclusives.push([a, b]);
       }
@@ -103,13 +101,13 @@ export function detectExclusiveRelations(matrix: ARMMatrix): Array<[string, stri
   return exclusives;
 }
 
-/**
- * Detects parallel activity pairs from the ARM matrix.
- * Two activities are considered parallel if:
- * - Both have no direct temporal dependency on each other (both directions are "-")
- * - They are not exclusive or logically constrained
- * - They have a common predecessor or successor (indicating they can split/merge)
- */
+
+// Detects parallel activity pairs from the ARM matrix.
+// Two activities are considered parallel if:
+// - Both have no direct temporal dependency on each other (both directions are "-")
+// - They are not exclusive or logically constrained
+// - They have a common predecessor or successor (indicating they can split/merge)
+
 export function detectParallelRelations(matrix: ARMMatrix): Array<[string, string]> {
   const parallelPairs: Array<[string, string]> = [];
   const activities = Object.keys(matrix);
@@ -125,7 +123,7 @@ export function detectParallelRelations(matrix: ARMMatrix): Array<[string, strin
 
       // Check if both activities have no temporal dependency on each other
       const noTemporalDependency = ta === "-" && tb === "-";
-      
+
       // Check if they are not exclusive
       const notExclusive = !["⇎", "∨", "¬"].includes(ea) && !["⇎", "∨", "¬"].includes(eb);
 
@@ -154,10 +152,10 @@ export function detectParallelRelations(matrix: ARMMatrix): Array<[string, strin
   return parallelPairs;
 }
 
-/**
- * Detect optional or inclusive dependencies in the ARM matrix.
- * These include "⇒" (optional_to) and "⇐" (optional_from) relationships.
- */
+
+// Detect optional or inclusive dependencies in the ARM matrix.
+// These include "⇒" (optional_to) and "⇐" (optional_from) relationships.
+
 export function detectOptionalDependencies(matrix: ARMMatrix): Array<[string, string, "optional_to" | "optional_from"]> {
   const optionals: Array<[string, string, "optional_to" | "optional_from"]> = [];
   for (const a in matrix) {
@@ -181,15 +179,15 @@ export function extractDirectTemporal(matrix: ARMMatrix): Array<[string, string]
       }
     }
   }
-   return directTemporalChains;
+  return directTemporalChains;
 }
 
-/**
- * Detects OR (inclusive gateway) relations between activities.
- * Two activities are OR-related if:
- * - Existential relation is "∨"
- * - Or both are optional from the same parent
- */
+
+// Detects OR (inclusive gateway) relations between activities.
+// Two activities are OR-related if:
+// - Existential relation is "∨"
+// - Or both are optional from the same parent
+
 export function detectOrRelations(matrix: ARMMatrix): Array<[string, string]> {
   const orPairs: Array<[string, string]> = [];
   const keys = Object.keys(matrix);

@@ -3,10 +3,10 @@ import { buildBPMN } from "../logic/buildBPMN";
 import { buildBPMNModelWithAnalysis } from "../logic/buildBPMNModelWithAnalysis";
 import { BpmnViewer } from "../components/BpmnViewer";
 import type { ARMMatrix } from "../logic/translateARM";
-import { AdvancedLevelStrategy } from "../logic/AdvancedLevelStrategy";
-import { AdvancedGatewayStrategy } from "../logic/AdvancedGatewayStrategy";
-import { LayerAwareGatewayStrategy } from "../logic/LayerAwareGatewayStrategy";
-import { analyzeGatewaysAndJoins } from "../logic/analyzeGatewaysAndJoins";
+import { AdvancedLevelStrategy } from "../logic/other logics/AdvancedLevelStrategy";
+import { AdvancedGatewayStrategy } from "../logic/other logics/AdvancedGatewayStrategy";
+import { LayerAwareGatewayStrategy } from "../logic/other logics/LayerAwareGatewayStrategy";
+import { analyzeGatewaysAndJoins } from "../logic/other logics/analyzeGatewaysAndJoins";
 
 interface TestCaseConfig {
   name: string;
@@ -38,7 +38,7 @@ const BatchTestPage: React.FC = () => {
 
       for (const path in jsonModules) {
         const raw = jsonModules[path];
-        const matrix = (raw && typeof raw === "object" && "default" in raw) ? raw.default : raw as ARMMatrix;
+        const matrix = (raw && typeof raw === "object" && "default" in raw) ? (raw.default as ARMMatrix) : (raw as ARMMatrix);
         const name = path.match(/([^/]+)\.json$/)![1];
         const imgModule = pngModules[`../data/testcases/${name}.png`];
         const img = imgModule && typeof imgModule === "object" && "default" in imgModule
@@ -48,32 +48,15 @@ const BatchTestPage: React.FC = () => {
         // Log each test case input
         console.log("Test case:", { path, name, matrix, img });
 
-        // 1. Get raw analysis
-        const rawAnalysis = buildBPMNModelWithAnalysis(matrix);
-
-        // 2. Adapt to buildBPMN's expected structure
-        const analysis = {
-          activities: rawAnalysis.topoOrder,
-          temporalChains: rawAnalysis.chains,
-          exclusiveRelations: rawAnalysis.exclusive,
-          parallelRelations: rawAnalysis.parallel,
-          optionalDependencies: rawAnalysis.optional,
-          directDependencies: rawAnalysis.directChains,
-          topoOrder: rawAnalysis.topoOrder,
-          orRelations: rawAnalysis.orRelations,
-          chains: rawAnalysis.chains,
-          exclusive: rawAnalysis.exclusive,
-          parallel: rawAnalysis.parallel,
-          directChains: rawAnalysis.directChains,
-          optional: rawAnalysis.optional,
-        };
+        // Get analysis with proper typing
+        const analysis = buildBPMNModelWithAnalysis(matrix as ARMMatrix);
 
         const bpmnXml = await buildBPMN(analysis);
 
         temp.push({
           name,
-          armMatrix: matrix,
-          expectedImageUrl: img,
+          armMatrix: matrix as ARMMatrix,
+          expectedImageUrl: img as string,
           expectedPass: true,
           analysis,
           bpmnXml,
@@ -166,7 +149,7 @@ const BatchTestPage: React.FC = () => {
               <section>
                 <h2 className="font-semibold text-black">Expected Diagram (PNG)</h2>
                 <img
-                  src={typeof r.expectedImageUrl === "string" ? r.expectedImageUrl : (r.expectedImageUrl?.default ?? "")}
+                  src={r.expectedImageUrl}
                   alt={`${r.name} expected`}
                   loading="lazy"
                   className="max-w-full border"
@@ -329,19 +312,19 @@ const BatchTestPage: React.FC = () => {
                 <table className="table-auto border text-black">
                   <thead>
                     <tr>
-                      <th className="border px-2">End</th>
-                      <th className="border px-2">Sources</th>
-                      <th className="border px-2">Layer</th>
+                      <th className="border px-2">Target</th>
+                      <th className="border px-2">Notes</th>
+                      <th className="border px-2">Order</th>
                     </tr>
                   </thead>
                   <tbody>
                     {(() => {
-                      const { endJoins } = analyzeGatewaysAndJoins(r.analysis);
-                      return (endJoins ?? []).map((item, i) => (
+                      const { joinStack } = analyzeGatewaysAndJoins(r.analysis);
+                      return (joinStack ?? []).map((item, i) => (
                         <tr key={i}>
-                          <td className="border px-2">{item.end}</td>
-                          <td className="border px-2">{item.sources.join(', ')}</td>
-                          <td className="border px-2">{item.layer}</td>
+                          <td className="border px-2">{item.target}</td>
+                          <td className="border px-2">{item.note.join(', ')}</td>
+                          <td className="border px-2">{item.order}</td>
                         </tr>
                       ));
                     })()}
