@@ -79,6 +79,8 @@
  * ```
  */
 
+import { kahnTopo } from "./translateARM";
+
 export type TemporalRelation = '<' | '<d' | '>' | '-' | null;
 export type ExistentialRelation =
   | '⇒'
@@ -194,5 +196,22 @@ export function validifyARM(
         throw new Error(`Existential relation conflict: ${b} ⇎ ${a} is not reciprocal`);
       }
     }
+  }
+
+  // 6️⃣  Temporal cycle check
+  const activities = Object.keys(matrix);
+  const edges: [string, string][] = [];
+  for (const src in matrix) {
+    for (const tgt in matrix[src]) {
+      const t = matrix[src][tgt].temporal;
+      if (t === "<" || t === "<d") {
+        edges.push([src, tgt]);
+      }
+    }
+  }
+  try {
+    kahnTopo(activities, edges);
+  } catch (e) {
+    throw new Error("Temporal cycle detected in ARM matrix: " + (e as Error).message);
   }
 }

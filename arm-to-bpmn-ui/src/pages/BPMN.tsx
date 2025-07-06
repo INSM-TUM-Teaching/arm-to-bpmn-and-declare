@@ -175,25 +175,25 @@ function BPMN() {
     setTopoOrder(rawAnalysis.topoOrder);
     setOrRelations(rawAnalysis.orRelations);
     {/** 
-    // 4. 分析 gateway/join/end join
+    // 4. Analyze gateway/join/end join
     const { gatewayStack, joinPoints, endJoins, levels } = analyzeGatewaysAndJoins(analysis);
     setJoinStack(gatewayStack);
     setJoinPoints(joinPoints);
     setEndJoins(endJoins);
     setLevelMap(levels);
 
-    // 4. 計算 levelMap 並 setState
-    const nodes = analysis.activities.slice(); // 複製一份
+    // 4. Calculate levelMap and setState
+    const nodes = analysis.activities.slice(); // Create a copy
     const edges = analysis.directDependencies.length
       ? analysis.directDependencies.slice()
       : analysis.temporalChains.slice();
 
-    // 找出 level 0 nodes
+    // Find level 0 nodes
     const level0Nodes = nodes.filter(n => levels[n] === 0);
 
-    // 若沒有 start node，補上
+    // If there's no start node, add one
     if (!nodes.includes('start')) nodes.unshift('start');
-    // start 指向所有 level 0
+    // start points to all level 0 nodes
     level0Nodes.forEach(n => {
       if (!edges.some(([from, to]) => from === 'start' && to === n)) {
         edges.push(['start', n]);
@@ -201,7 +201,7 @@ function BPMN() {
     });
     setLevelMap(levels);
 
-    // 5. 計算 gateway groupings
+    // 5. gateway groupings
     const gatewayStrategy = new LayerAwareGatewayStrategy();
     const groupResult: Record<string, any[]> = {};
     for (const node of nodes) {

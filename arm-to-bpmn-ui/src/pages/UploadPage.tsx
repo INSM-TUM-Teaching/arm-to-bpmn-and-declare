@@ -1,7 +1,7 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { buildBPMN } from "../logic/buildBPMN";
 import { buildBPMNModelWithAnalysis } from "../logic/buildBPMNModelWithAnalysis";
-import { BpmnViewer } from "../components/BpmnViewer";
+import BpmnViewer from "bpmn-js/lib/NavigatedViewer";
 import type { ARMMatrix } from "../logic/translateARM";
 
 const UploadPage: React.FC = () => {
@@ -9,10 +9,13 @@ const UploadPage: React.FC = () => {
   const [analysis, setAnalysis] = useState<any>(null);
   const [bpmnXml, setBpmnXml] = useState<string>("");
   const [imgUrl, setImgUrl] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string>("");
 
   // refs for hidden file inputs
   const jsonInputRef = useRef<HTMLInputElement>(null);
   const imgInputRef = useRef<HTMLInputElement>(null);
+  const viewerRef = useRef<HTMLDivElement>(null);
+  const viewerInstance = useRef<any>(null);
 
   const handleJsonUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -36,6 +39,33 @@ const UploadPage: React.FC = () => {
 
   const handleGenerate = async () => {
     if (!matrix) return;
+    setValidationError("");
+    // --- VALIDATION ---
+    try {
+      const { validifyARM } = await import("../logic/validifyARM");
+      const allowed = Object.keys(matrix);
+      const convertedMatrix = Object.fromEntries(
+        Object.entries(matrix).map(([src, targets]) => [
+          src,
+          Object.fromEntries(
+            Object.entries(targets).map(([tgt, [temporal, existential]]) => [
+              tgt,
+              {
+                temporal: temporal as import("../logic/validifyARM").TemporalRelation,
+                existential: existential as import("../logic/validifyARM").ExistentialRelation
+              }
+            ])
+          )
+        ])
+      );
+      validifyARM(convertedMatrix, allowed);
+    } catch (err: any) {
+      setValidationError(err.message || String(err));
+      setBpmnXml("");
+      setAnalysis(null);
+      return;
+    }
+    // --- GENERATION ---
     const rawAnalysis = buildBPMNModelWithAnalysis(matrix);
     const analysisObj = {
       activities: rawAnalysis.topoOrder,
@@ -56,6 +86,17 @@ const UploadPage: React.FC = () => {
     const xml = await buildBPMN(analysisObj);
     setBpmnXml(xml);
   };
+
+  useEffect(() => {
+    if (viewerRef.current && bpmnXml) {
+      const viewer = new BpmnViewer({ container: viewerRef.current });
+      viewer.importXML(bpmnXml).then(() => {
+        const canvas = viewer.get("canvas") as { zoom: (arg: string) => void };
+        canvas.zoom("fit-viewport");
+      });
+      viewerInstance.current = viewer;
+    }
+  }, [bpmnXml]);
 
   return (
     <div className="p-6 text-black">
@@ -106,7 +147,12 @@ const UploadPage: React.FC = () => {
           Please upload a valid ARM JSON file before generating.
         </div>
       )}
-      {analysis && (
+      {validationError && (
+        <div className="text-red-600 font-bold border border-red-400 bg-red-50 p-4 rounded mb-4">
+          {validationError}
+        </div>
+      )}
+      {analysis && !validationError && (
         <div className="space-y-6">
           {/* Logic Output Section */}
           <section className="mb-10">
@@ -159,10 +205,7 @@ const UploadPage: React.FC = () => {
           {/* BPMN Viewer */}
           <section className="mb-10">
             <h2 className="text-xl font-semibold mb-4 text-black">🧾 BPMN Viewer</h2>
-            {bpmnXml && bpmnXml.includes("<bpmn:definitions")
-              ? <BpmnViewer xml={bpmnXml} />
-              : <div className="text-red-600">Invalid BPMN XML</div>
-            }
+            <div ref={viewerRef} className="border rounded-md h-96"></div>
           </section>
           {/* Expected */}
           {imgUrl && (
