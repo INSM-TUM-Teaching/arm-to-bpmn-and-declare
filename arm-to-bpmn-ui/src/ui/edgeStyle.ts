@@ -1,8 +1,5 @@
 // Defines reusable Cytoscape.js styles for edges in a ConDec visualizer
 
-
-
-
 /**
  * An array of Cytoscape.js stylesheet objects that define the visual appearance of edges
  * in a Declare model visualizer.
@@ -217,16 +214,6 @@ const edgeStyles: any[] = [
             'edge-distances': 'node-position',
             'line-style': 'solid',
             'width': 2
-        }
-    },
-    {
-        selector: '.shadow-node',
-        style: {
-            'background-opacity': 0,
-            'border-opacity': 0,
-            'label': '',
-            'width': 1,
-            'height': 1
         }
     },
    
