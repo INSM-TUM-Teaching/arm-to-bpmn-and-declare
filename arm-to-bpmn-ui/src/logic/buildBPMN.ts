@@ -597,8 +597,13 @@ export async function buildBPMN(analysis: Analysis): Promise<string> {
     const n = joinGatewayFor[uniqueEndNodes[0]] || uniqueEndNodes[0];
     addFlow(n, 'EndEvent_1', elements, flows, handledPairs, flowSources, flowTargets);
   } else if (uniqueEndNodes.length > 1) {
-    const g = 'inclusiveGateway_Join_End';
-    addElement(elements, g, 'inclusiveGateway', 'OR Join');
+    // edited to Determine the correct gateway type based on relationships between end nodes not just include an OR gateway
+    const endGatewayType = inferGatewayTypeFromGroup([], uniqueEndNodes, analysis);
+    const gatewayName = endGatewayType === 'exclusiveGateway' ? 'XOR Join' : 
+                      endGatewayType === 'parallelGateway' ? 'AND Join' : 'OR Join';
+    const g = `${endGatewayType}_Join_End`;
+    
+    addElement(elements, g, endGatewayType, gatewayName);
     uniqueEndNodes.map(n => joinGatewayFor[n] || n).forEach(n => {
       addFlow(n, g, elements, flows, handledPairs, flowSources, flowTargets);
     });
