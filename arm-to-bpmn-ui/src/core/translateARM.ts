@@ -1,43 +1,10 @@
-/**
- * Translates an Activity Relationship Matrix (ARM) into a Declare Model.
- *
- * This module:
- * - Validates the ARM for logical and syntactic correctness.
- * - Converts each pairwise relationship into a Declare constraint.
- * - Detects a potential init activity based on precedence relationships.
- *
- * @module translateARMtoDeclare
- */
+/*
+  Translates an Activity Relationship Matrix (ARM) into a Declare Model.
+  Validates relationships, maps them to Declare constraints, and identifies init activities.
+*/
 import { DeclareModel, ARMMatrix } from '../types/types';
 
-
-/**
- * Validation rules - Allowed temporal symbols in the ARM matrix.
- * Examples: '<d' (directly before), '>' (after), '-' (neutral)
- */
-const TEMPORAL_SET = ['<d', '>d', '<', '>', '-'];
-/**
- * Allowed existential symbols in the ARM matrix.
- * Examples: '⇒' (implies), '⇔' (equivalence), '¬∧' (not-and), '-' (neutral)
- */
-const EXISTENTIAL_SET = ['⇒', '⇐', '⇔', '⇎', '∨', '¬∧', '-'];
-
-
-/**
- * Constraints that are logically invalid and should be rejected.
- * These combinations either conflict temporally and existentially or are undefined.
- */
-const ILLEGAL_COMBOS = new Set([
-  '<d⇎', '>d⇎', '<⇎', '>⇎',
-  '<d∨', '>d∨', '<∨', '>∨',
-  '<d¬∧', '>d¬∧', '<¬∧', '>¬∧'
-]);
-
-
-/**
- * Maps valid ARM relationship symbols to Declare constraint types.
- * These represent the "forward" direction (source → target).
- */
+// Mapping for normal ARM relationships
 const TRANSLATE_MAP: Record<string, string> = {
   '<d⇒': 'chain_response',
   '<d⇔': 'chain_succession',
@@ -55,10 +22,7 @@ const TRANSLATE_MAP: Record<string, string> = {
   '>-': 'neg_precedence'
 };
 
-
-/**
- * Maps ARM relationships that need to be interpreted in reverse (target → source).
- */
+// Mapping for reversed ARM relationships
 const REVERSE_TRANSLATE_MAP: Record<string, string> = {
   '>⇔': 'succession',
   '>⇒': 'precedence',
@@ -69,29 +33,7 @@ const REVERSE_TRANSLATE_MAP: Record<string, string> = {
   '-⇐': 'resp_existence'
 };
 
-
-/**
- * Validates that both temporal and existential parts of a relationship are acceptable.
- *
- * @param {[string, string]} param0 - A tuple of [temporal, existential] symbols
- * @returns {boolean} - True if both parts are valid
- */
-function isValidDependency([temp, exist]: string[]): boolean {
-  return TEMPORAL_SET.includes(temp) && EXISTENTIAL_SET.includes(exist);
-}
-
-
-/**
- * Converts a given ARM matrix into a Declare model.
- *
- * @param {ARMMatrix} arm - An object representing activity relationships: arm[source][target] = [temporal, existential]
- * @returns {DeclareModel} - A Declare model with activities, constraints, and possibly an init unary constraint
- *
- * @throws Will throw an error if:
- * - A self-relationship is not ['x', 'x']
- * - A dependency uses invalid temporal or existential symbols
- * - A relationship is among the illegal combinations
- */
+// Converts a given ARM matrix into a Declare model.
 function translateARMtoDeclare(arm: ARMMatrix): DeclareModel {
   const activities = Object.keys(arm);
   const constraints: DeclareModel['constraints'] = [];
@@ -99,31 +41,6 @@ function translateARMtoDeclare(arm: ARMMatrix): DeclareModel {
   const precedenceCount: Record<string, number> = {};
   activities.forEach(a => (precedenceCount[a] = 0));
 
-
-  // Validation
-  for (const i of activities) {
-    for (const j of activities) {
-      const [temp, exist] = arm[i][j];
-      const relKey = temp + exist;
-
-
-      if (i === j) {
-        if (temp !== 'x' || exist !== 'x') throw new Error(`Self-relationship on '${i}' must be ['x','x']`);
-      }
-      else {
-        // Validate temporal and existential values
-        if (!isValidDependency([temp, exist])) {
-          throw new Error(`Invalid dependency at [${i}][${j}]: ${temp}, ${exist}`);
-        }
-        if (ILLEGAL_COMBOS.has(relKey)) {
-          throw new Error(`Illogical combination at [${i}][${j}]: ${relKey}`);
-        }
-      }
-    }
-  }
-
-
-  // Translation
   // Traverse upper triangle to avoid duplicates
   for (let i = 0; i < activities.length; i++) {
     for (let j = i + 1; j < activities.length; j++) {

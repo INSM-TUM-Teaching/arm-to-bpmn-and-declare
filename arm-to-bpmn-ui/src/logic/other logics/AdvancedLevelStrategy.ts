@@ -1,17 +1,16 @@
 // AdvancedLevelStrategy.ts
 import type { LevelAssignmentStrategy } from './StrategyTypes';
 
-/**
- * AdvancedLevelStrategy
- * ---------------------
- * Computes activity levels for a DAG produced from an ARM matrix.
- * • Level 0  – activities with no incoming dependency
- * • Level n+1 – activities whose predecessors are at most level n
- *
- * The result is a map:  { activityId → levelNumber }
- * This map is stored in `analysis.activityLevels` and can be used by
- * downstream logic (e.g., inserting AND gateways for level-0 activities).
- */
+//  * AdvancedLevelStrategy
+//  * ---------------------
+//  * Computes activity levels for a DAG produced from an ARM matrix.
+//  * • Level 0  – activities with no incoming dependency
+//  * • Level n+1 – activities whose predecessors are at most level n
+//  *
+//  * The result is a map:  { activityId → levelNumber }
+//  * This map is stored in `analysis.activityLevels` and can be used by
+//  * downstream logic (e.g., inserting AND gateways for level-0 activities).
+
 export class AdvancedLevelStrategy implements LevelAssignmentStrategy {
   computeLevels(nodes: string[], edges: [string, string][]): Record<string, number> {
     const inDegree = new Map<string, number>();

@@ -1,21 +1,5 @@
 // Defines reusable Cytoscape.js styles for edges in a ConDec visualizer
 
-/**
- * An array of Cytoscape.js stylesheet objects that define the visual appearance of edges
- * in a Declare model visualizer.
- *
- * Includes:
- * - Base styles for all edges
- * - Arrowhead types (circle, triangle, compound)
- * - Custom styles for specific Declare constraints (e.g., succession, precedence)
- * - Multi-line edges for chained constraints
- * - Special visual indicators (e.g., negative constraint symbol ║, choice symbol ◇)
- *
- * These classes are assigned dynamically via edge class names returned from the
- * `getConstraintEdges` function.
- *
- * @type {Stylesheet[]}
- */
 const edgeStyles: any[] = [
     // Default edge base style
     {
@@ -64,7 +48,7 @@ const edgeStyles: any[] = [
             'source-arrow-shape': 'circle',
         }
     },
-   
+
     // Combined Triangle + Circle at Target (succession/precedence)
     // Simulated by overlaying two identical edges with different arrow types
     {
@@ -87,9 +71,9 @@ const edgeStyles: any[] = [
         style: {
             'curve-style': 'bezier',
             'line-style': 'solid',
-            'line-color': '#333',
+            'line-color': '#666',
             'target-arrow-shape': 'triangle',
-            'target-arrow-color': '#333',
+            'target-arrow-color': '#666',
             'arrow-scale': 2.2,
             'width': 2
         }
@@ -101,9 +85,9 @@ const edgeStyles: any[] = [
             'segment-distances': '0',
             'segment-weights': '0.5',
             'edge-distances': 'node-position',
-            'line-color': '#333',
+            'line-color': '#666',
             'target-arrow-shape': 'circle',
-            'target-arrow-color': '#333',
+            'target-arrow-color': '#666',
             'arrow-scale': 1.2,
             'width': 2,
             'line-style': 'solid'
@@ -116,7 +100,7 @@ const edgeStyles: any[] = [
         style: {
             'curve-style': 'bezier',
             'line-style': 'solid',
-            'line-color': '#333',
+            'line-color': '#666',
             'width': 2
         }
     },
@@ -132,7 +116,7 @@ const edgeStyles: any[] = [
             'edge-distances': 'node-position',
             'line-color': 'transparent',
             'source-arrow-shape': 'circle',
-            'source-arrow-color': '#333',
+            'source-arrow-color': '#666',
             'arrow-scale': 0.9,
             'width': 0.1
         }
@@ -149,7 +133,7 @@ const edgeStyles: any[] = [
             'edge-distances': 'node-position',
             'line-color': 'transparent',
             'target-arrow-shape': 'triangle',
-            'target-arrow-color': '#333',
+            'target-arrow-color': '#666',
             'arrow-scale': 1.8,
             'width': 0.1,
             'z-index': 20
@@ -167,7 +151,7 @@ const edgeStyles: any[] = [
             'edge-distances': 'node-position',
             'line-color': 'transparent',
             'target-arrow-shape': 'circle',
-            'target-arrow-color': '#333',
+            'target-arrow-color': '#666',
             'arrow-scale': 0.9,
             'width': 0.1
         }
@@ -208,7 +192,7 @@ const edgeStyles: any[] = [
     {
         selector: '.line-triple-3',
         style: {
-           'curve-style': 'segments',
+            'curve-style': 'segments',
             'segment-distances': '15',
             'segment-weights': '0.5',
             'edge-distances': 'node-position',
@@ -216,7 +200,7 @@ const edgeStyles: any[] = [
             'width': 2
         }
     },
-   
+
     // Negative constraint edge (║ symbol)
     {
         selector: '.line-negative',
@@ -236,7 +220,7 @@ const edgeStyles: any[] = [
         style: {
             'line-style': 'solid',
             'label': '◇',
-            'font-size': 36,
+            'font-size': 34,
             'text-margin-y': 0,
             'font-family': 'monospace',
             'text-halign': 'center',
