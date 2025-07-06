@@ -1,13 +1,13 @@
 import { useEffect, useState, useRef } from 'react';
 import { buildBPMN } from '../logic/buildBPMN';
-import { AdvancedLevelStrategy } from '../logic/AdvancedLevelStrategy';
+import { AdvancedLevelStrategy } from '../logic/other logics/AdvancedLevelStrategy';
 import { buildBPMNModelWithAnalysis } from '../logic/buildBPMNModelWithAnalysis';
 import type { ARMMatrix } from '../logic/translateARM';
 import BpmnViewer from 'bpmn-js/lib/NavigatedViewer';
-import { AdvancedGatewayStrategy } from '../logic/AdvancedGatewayStrategy';
+import { AdvancedGatewayStrategy } from '../logic/other logics/AdvancedGatewayStrategy';
 import { FiDownload } from 'react-icons/fi';
-import { LayerAwareGatewayStrategy } from '../logic/LayerAwareGatewayStrategy';
-import { analyzeGatewaysAndJoins } from '../logic/analyzeGatewaysAndJoins';
+import { LayerAwareGatewayStrategy } from '../logic/other logics/LayerAwareGatewayStrategy';
+import { analyzeGatewaysAndJoins } from '../logic/other logics/analyzeGatewaysAndJoins';
 
 //import sampleARMJson from './data/sampleARM1.json';
 

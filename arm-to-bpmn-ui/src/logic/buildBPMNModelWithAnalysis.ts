@@ -50,7 +50,9 @@ export function buildBPMNModelWithAnalysis(matrix: ARMMatrix) {
   const directChains = extractDirectTemporal(matrix);
 
   // Return all computed relations and orderings for downstream use
+  // Include both the original names and the Analysis-compatible names
   return {
+    // Original property names for backward compatibility
     chains,
     topoOrder,
     indexMap,
@@ -59,5 +61,13 @@ export function buildBPMNModelWithAnalysis(matrix: ARMMatrix) {
     directChains,
     optional,
     orRelations,
+    
+    // Analysis-compatible property names
+    activities: topoOrder,
+    temporalChains: chains,
+    exclusiveRelations: exclusive,
+    parallelRelations: parallel,
+    optionalDependencies: optional,
+    directDependencies: directChains,
   };
 }

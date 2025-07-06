@@ -1,5 +1,4 @@
 // Defines reusable Cytoscape.js styles for edges in a ConDec visualizer
-import { Stylesheet } from 'cytoscape';
 
 
 
@@ -20,7 +19,7 @@ import { Stylesheet } from 'cytoscape';
  *
  * @type {Stylesheet[]}
  */
-const edgeStyles: Stylesheet[] = [
+const edgeStyles: any[] = [
     // Default edge base style
     {
         selector: 'edge',

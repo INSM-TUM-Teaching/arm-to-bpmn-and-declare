@@ -1,6 +1,6 @@
 // LayerAwareGatewayStrategy.ts
 import { GatewayGroupingStrategy } from './StrategyTypes';
-import { Analysis } from './TranslateARM';
+import { Analysis } from '../buildBPMN';
 
 export class LayerAwareGatewayStrategy implements GatewayGroupingStrategy {
   groupSuccessors(
@@ -12,15 +12,15 @@ export class LayerAwareGatewayStrategy implements GatewayGroupingStrategy {
     if (!analysis.activityLevels)
       throw new Error('activityLevels missing – compute levels first');
 
-    // 取得 directTargets 中的最小 level，找出同一層
-    const targetLevels = directTargets.map(t => analysis.activityLevels[t]);
+    // Get the minimum level from directTargets to find nodes at the same layer
+    const targetLevels = directTargets.map(t => analysis.activityLevels?.[t] ?? 0);
     const minLevel = Math.min(...targetLevels);
     const sameLayer = directTargets.filter(
-      t => analysis.activityLevels[t] === minLevel
+      t => (analysis.activityLevels?.[t] ?? 0) === minLevel
     );
     if (sameLayer.length <= 1) return null;
 
-    // 分群依據：同一群內所有 node 彼此之間的關係都一樣
+    // Grouping criteria: all nodes in the same group have the same relationship with each other
     const groups: Array<{ type: 'exclusive' | 'parallel' | 'or'; targets: string[] }> = [];
     const assigned = new Set<string>();
 
@@ -36,12 +36,12 @@ export class LayerAwareGatewayStrategy implements GatewayGroupingStrategy {
       return null;
     };
 
-    // 依據關係分群
+    // Group based on relationships
     for (let i = 0; i < sameLayer.length; i++) {
       const a = sameLayer[i];
       if (assigned.has(a)) continue;
 
-      // 找出與 a 有相同關係的 node
+      // Find nodes that have the same relationship with node 'a'
       let groupType: 'exclusive' | 'parallel' | 'or' | null = null;
       const group = [a];
 
@@ -59,14 +59,14 @@ export class LayerAwareGatewayStrategy implements GatewayGroupingStrategy {
         }
       }
 
-      // 若有兩個以上且關係一致才分群
+      // Only group if there are more than two nodes with consistent relationships
       if (group.length > 1 && groupType) {
         groups.push({ type: groupType, targets: group });
         group.forEach(t => assigned.add(t));
       }
     }
 
-    // 剩下沒分到 group 的 node，全部歸為 parallel group
+    // Remaining nodes not assigned to any group are placed in a parallel group
     const rest = sameLayer.filter(x => !assigned.has(x));
     if (rest.length > 1) {
       groups.push({ type: 'parallel', targets: rest });

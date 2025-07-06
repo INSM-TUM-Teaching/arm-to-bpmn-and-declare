@@ -1,6 +1,6 @@
-import { buildBPMNModelWithAnalysis } from '../src/TranslateARM';
-import { AdvancedLevelStrategy }       from '../src/AdvancedLevelStrategy';
-import type { ARMMatrix }              from '../src/types';
+import { buildBPMNModelWithAnalysis } from '../buildBPMNModelWithAnalysis';
+import { AdvancedLevelStrategy }       from './AdvancedLevelStrategy';
+import type { ARMMatrix }              from '../translateARM';
 
 // Fake ARM for demo
 const arm: ARMMatrix = {

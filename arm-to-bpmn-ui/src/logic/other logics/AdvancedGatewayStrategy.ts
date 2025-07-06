@@ -1,6 +1,6 @@
 // AdvancedGatewayStrategy.ts
 import type { GatewayGroupingStrategy } from './StrategyTypes';
-import  type { Analysis } from './translateARM';
+import  type { Analysis } from '../buildBPMN';
 
 /**
  * AdvancedGatewayStrategy

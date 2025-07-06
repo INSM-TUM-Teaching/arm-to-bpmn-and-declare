@@ -93,6 +93,9 @@ export function analyzeGatewaysAndJoins(analysis: Analysis) {
     const succ = edges.filter(([from]) => from === n).map(([, to]) => to);
     const groups = gatewayStrategy.groupSuccessors(n, succ, {
       ...analysis,
+      exclusiveRelations: (analysis as any).exclusiveRelations ?? [],
+      parallelRelations: (analysis as any).parallelRelations ?? [],
+      orRelations: (analysis as any).orRelations ?? [],
       activityLevels: levels,
     });
     if (groups?.length) gatewayGroups[n] = groups;

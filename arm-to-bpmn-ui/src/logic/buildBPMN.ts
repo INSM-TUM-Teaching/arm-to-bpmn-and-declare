@@ -19,7 +19,7 @@ export type Analysis = {
   optionalDependencies?: [string, string, 'optional_to' | 'optional_from'][];
   orRelations?: [string, string][];
   // Optional level information (e.g., for layout or nested analysis)
-  //activityLevels?: Record<string, number>;
+  activityLevels?: Record<string, number>;
 };
 
 /* ============================================================================
