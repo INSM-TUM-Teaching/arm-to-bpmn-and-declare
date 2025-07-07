@@ -50,7 +50,7 @@ const DeclareVisualizer: React.FC<Props> = ({ declareModel }) => {
             'background-color': '#ffffff',           // White background
             'border-width': 0,
             'font-size': 18,
-            'text-margin-y': -2                     // Pull label upward
+            'z-compound-depth': 'bottom',                      
           }
         },
         ...edgeStyles // Add custom edge styles
@@ -121,7 +121,7 @@ const DeclareVisualizer: React.FC<Props> = ({ declareModel }) => {
     cy.nodes(".init-node").forEach(n => {
       const target = cy.getElementById(n.id().replace("init-", ""));
       const pos = target.position();
-      n.position({ x: pos.x - 30, y: pos.y - 40 });
+      n.position({ x: pos.x - 0, y: pos.y - 0 });
     });
 
 
