@@ -17,6 +17,7 @@ const edgeStyles: any[] = [
             'text-background-shape': 'roundrectangle',
             'font-size': 12,
             'text-margin-y': -10,
+            'target-endpoint': 'outside-to-node',
         }
     },
 
@@ -110,6 +111,7 @@ const edgeStyles: any[] = [
         selector: '.succession-source-circle',
         style: {
             'curve-style': 'segments',
+            'target-endpoint': 'outside-to-node',
             'line-style': 'solid',
             'segment-distances': '0',
             'segment-weights': '0.1',
@@ -127,6 +129,7 @@ const edgeStyles: any[] = [
         selector: '.succession-target-triangle',
         style: {
             'curve-style': 'segments',
+            'target-endpoint': 'outside-to-node',
             'line-style': 'solid',
             'segment-distances': '0',
             'segment-weights': '0.9',
@@ -145,6 +148,7 @@ const edgeStyles: any[] = [
         selector: '.succession-target-circle',
         style: {
             'curve-style': 'segments',
+            'target-endpoint': 'outside-to-node',
             'line-style': 'solid',
             'segment-distances': '0',
             'segment-weights': '0.88',

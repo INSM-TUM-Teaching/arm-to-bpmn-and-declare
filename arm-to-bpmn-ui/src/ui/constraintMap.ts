@@ -12,19 +12,19 @@ export function getConstraintEdges(constraint: string, source: string, target: s
         case 'succession':
             return [
                 {
-                    data: { id: `${idPrefix}-main`, source, target },
+                    data: { id: `${idPrefix}-main`, source, target, constraint},
                     classes: 'succession-main'
                 },
                 {
-                    data: { id: `${idPrefix}-sourcecircle`, source, target },
+                    data: { id: `${idPrefix}-sourcecircle`, source, target, constraint},
                     classes: 'succession-source-circle'
                 },
                 {
-                    data: { id: `${idPrefix}-targettriangle`, source, target },
+                    data: { id: `${idPrefix}-targettriangle`, source, target, constraint},
                     classes: 'succession-target-triangle'
                 },
                 {
-                    data: { id: `${idPrefix}-targetcircle`, source, target },
+                    data: { id: `${idPrefix}-targetcircle`, source, target, constraint},
                     classes: 'succession-target-circle'
                 }
             ];
