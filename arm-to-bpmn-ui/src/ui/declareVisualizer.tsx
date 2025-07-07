@@ -49,7 +49,7 @@ const DeclareVisualizer: React.FC<Props> = ({ declareModel }) => {
             'text-halign': 'center',
             'background-color': '#ffffff',           // White background
             'border-width': 0,
-            'font-size': 18,
+            'font-size': 14,
             'z-compound-depth': 'bottom',                      
           }
         },
@@ -122,6 +122,10 @@ const DeclareVisualizer: React.FC<Props> = ({ declareModel }) => {
       const target = cy.getElementById(n.id().replace("init-", ""));
       const pos = target.position();
       n.position({ x: pos.x - 0, y: pos.y - 0 });
+
+      // Makes them both fixed (undraggable)
+      n.lock();
+      target.lock();
     });
 
 
