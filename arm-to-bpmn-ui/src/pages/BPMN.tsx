@@ -111,6 +111,16 @@ const sampleARM7: ARMMatrix = {
 }
 
 
+//another example with gatewaytogateway
+const sampleARM8: ARMMatrix = {
+  "a": { "a": ["x", "x"], "b": ["<d", "⇐"], "c": ["<d", "⇐"], "d": ["<", "⇔"], "e": ["<", "⇔"], "f": ["<", "⇔"] },
+  "b": { "a": [">d", "⇒"], "b": ["x", "x"], "c": ["-", "⇎"], "d": ["<", "⇒"], "e": ["<", "⇒"], "f": ["<", "⇒"] },
+  "c": { "a": [">d", "⇒"], "b": ["-", "⇎"], "c": ["x", "x"], "d": ["<", "⇒"], "e": ["<", "⇒"], "f": ["<", "⇒"] },
+  "d": { "a": [">", "⇔"], "b": [">", "⇐"], "c": [">", "⇐"], "d": ["x", "x"], "e": ["-", "⇔"], "f": ["<", "⇔"] },
+  "e": { "a": [">", "⇔"], "b": [">", "⇐"], "c": [">", "⇐"], "d": ["-", "⇔"], "e": ["x", "x"], "f": ["<", "⇔"] },
+  "f": { "a": [">", "⇔"], "b": [">", "⇐"], "c": [">", "⇐"], "d": [">", "⇔"], "e": [">", "⇔"], "f": ["x", "x"] }
+}
+
 
 
 
@@ -148,7 +158,7 @@ function BPMN() {
   }, [bpmnXml]);
 
   const testLogicFunctions = async () => {
-    const rawAnalysis = buildBPMNModelWithAnalysis(sampleARM5);
+    const rawAnalysis = buildBPMNModelWithAnalysis(sampleARM8);
     const analysis = {
       activities: rawAnalysis.topoOrder,
       temporalChains: rawAnalysis.chains,

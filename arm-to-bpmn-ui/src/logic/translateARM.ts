@@ -13,6 +13,8 @@ export type ARMMatrix = Record<string, Record<string, [TemporalRelation, Existen
 // cmp: optional comparator for sorting the zero-indegree nodes
 // Throws an error if a cycle is detected.
 
+
+///unused old logic of kahntopp
 export function kahnTopo<V extends string | number>(
   V: V[],
   E: Array<[V, V]>,

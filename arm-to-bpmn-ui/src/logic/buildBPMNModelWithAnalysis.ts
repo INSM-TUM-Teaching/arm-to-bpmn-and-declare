@@ -1,4 +1,3 @@
-// Import topological sorting and relation detection utilities from translateARM module
 import { kahnTopo } from './translateARM'; // adjust path if needed
 import {
   extractTemporalChains,

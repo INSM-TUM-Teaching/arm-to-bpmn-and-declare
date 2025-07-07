@@ -139,7 +139,7 @@ function findConvergingNode(sources: string[], analysis: Analysis): string | nul
   const reachSets = sources.map(getReachables);
 
   // Find the intersection: any node reachable from all sources
-  return [...reachSets.reduce((a, b) => new Set([...a].filter(x => b.has(x))))][0] ?? null;
+    return [...reachSets.reduce((a, b) => new Set([...a].filter(x => b.has(x))))][0] ?? null;
 }
 
 
@@ -298,13 +298,13 @@ function createSplitJoin(
   }
 ) {
   const { elements, flows, handledPairs, flowSources, flowTargets, joinGatewayFor } = context;
+  console.log(`[createSplitJoin] Creating ${type} split/join for ${from} → [${targets.join(', ')}]`);
 
   // Generate split and join IDs
   const splitId = `${type}_Split_${from}`;
   const joinId = `${type}_Join_${from}`;
   const splitName = type === 'exclusiveGateway' ? 'XOR Split' : type === 'parallelGateway' ? 'AND Split' : 'OR Split';
   const joinName = type === 'exclusiveGateway' ? 'XOR Join' : type === 'parallelGateway' ? 'AND Join' : 'OR Join';
-
   // Create the split gateway and connect it to the source node
   addElement(elements, splitId, type, splitName);
   addFlow(from, splitId, elements, flows, handledPairs, flowSources, flowTargets);
@@ -312,12 +312,12 @@ function createSplitJoin(
   // For each target, check if it is itself a split (has multiple outgoing dependencies)
   targets.forEach(t => {
     const tOutgoings = analysis.directDependencies.filter(([depFrom]) => depFrom === t).map(([_, to]) => to);
-
+    
     if (tOutgoings.length > 1) {
       // Target is also a split — recursively handle it
       const nestedType = inferGatewayTypeFromGroup([t], tOutgoings, analysis);
       createSplitJoin(t, tOutgoings, nestedType, analysis, context);
-
+      
       // Connect outer split to nested split
       addFlow(splitId, `${nestedType}_Split_${t}`, elements, flows, handledPairs, flowSources, flowTargets);
     } else {
@@ -329,6 +329,7 @@ function createSplitJoin(
   // Find a node all targets converge into (if any)
   const convergeAt = findConvergingNode(targets, analysis);
   if (convergeAt) {
+    console.log(`[createSplitJoin] Simple convergence at: ${convergeAt}`);
     const joinAt = `${type}_Join_${convergeAt}`;
     addElement(elements, joinAt, type, joinName);
 
@@ -342,6 +343,7 @@ function createSplitJoin(
     addFlow(joinAt, convergeAt, elements, flows, handledPairs, flowSources, flowTargets);
   } else {
     // If no natural convergence, add a generic join after all branches
+
     addElement(elements, joinId, type, joinName);
     targets.forEach(t => {
       if ((flowSources.get(t)?.size ?? 0) === 0) {
@@ -351,6 +353,126 @@ function createSplitJoin(
     });
   }
 }
+//logic to handle gateway that convergees to another gateway in between the activites (not at start or end)
+//mainly for when the gateway is considered the predecessor of the next gateway
+
+
+// ENHANCED: Universal relation grouping to handle post-convergence relations of all types
+function groupPostConvergenceRelations(analysis: Analysis, context: ReturnType<typeof createContext>) {
+  const { elements, flows, handledPairs, flowSources, flowTargets } = context;
+  
+  console.log(`[groupPostConvergenceRelations] Processing all relation types`);
+  
+  // Define all relation types to process
+  const relationTypes = [
+    { relations: analysis.parallelRelations || [], type: 'parallelGateway', name: 'AND' },
+    { relations: analysis.exclusiveRelations || [], type: 'exclusiveGateway', name: 'XOR' },
+    { relations: analysis.orRelations || [], type: 'inclusiveGateway', name: 'OR' }
+  ];
+  
+  relationTypes.forEach(({ relations, type, name }) => {
+    if (relations.length === 0) return;
+    
+    console.log(`[groupPostConvergenceRelations] Processing ${relations.length} ${name} relations`);
+    
+    // Group relations by their shared targets
+    const relationGroups = new Map<string, Set<string>>();
+    
+    relations.forEach(([a, b]) => {
+      if (handledPairs.has(`${a}-${b}`) || handledPairs.has(`${b}-${a}`)) {
+        return; // Skip already handled pairs
+      }
+      
+      // Find shared targets for a and b
+      const aTargets = analysis.temporalChains.filter(([from]) => from === a).map(([_, to]) => to);
+      const bTargets = analysis.temporalChains.filter(([from]) => from === b).map(([_, to]) => to);
+      const sharedTargets = aTargets.filter(target => bTargets.includes(target));
+      
+      if (sharedTargets.length > 0) {
+        const sharedTarget = sharedTargets[0]; // Use first shared target
+        
+        if (!relationGroups.has(sharedTarget)) {
+          relationGroups.set(sharedTarget, new Set());
+        }
+        relationGroups.get(sharedTarget)!.add(a);
+        relationGroups.get(sharedTarget)!.add(b);
+        
+        console.log(`[groupPostConvergenceRelations] Grouped ${a}, ${b} (${name}) → converging at ${sharedTarget}`);
+      }
+    });
+    
+    // Process each relation group
+    relationGroups.forEach((activities, convergenceTarget) => {
+      const activitiesArray = Array.from(activities);
+      console.log(`[groupPostConvergenceRelations] Creating ${name} split/join for [${activitiesArray.join(', ')}] → ${convergenceTarget}`);
+      
+      // Find what feeds into these related activities
+      const feeders = new Set<string>();
+      activitiesArray.forEach(activity => {
+        const incomingFlows = flows.filter(flow => flow.to === activity);
+        incomingFlows.forEach(flow => feeders.add(flow.from));
+      });
+      
+      if (feeders.size === 1) {
+        const feeder = Array.from(feeders)[0];
+        const feederElement = elements.get(feeder);
+        
+        console.log(`[groupPostConvergenceRelations] Feeder: ${feeder}, element type: ${feederElement?.type}`);
+        
+        // Create split and join gateways
+        const splitId = `${type}_Split_${feeder}_to_${convergenceTarget}`;
+        const joinId = `${type}_Join_${convergenceTarget}`;
+        
+        addElement(elements, splitId, type, `${name} Split`);
+        addElement(elements, joinId, type, `${name} Join`);
+        
+        // Remove existing flows from any source to related activities
+        const flowsToRemove = flows.filter(flow => 
+          activitiesArray.includes(flow.to)
+        );
+        flowsToRemove.forEach(flow => {
+          console.log(`[groupPostConvergenceRelations] Removing flow: ${flow.from} → ${flow.to}`);
+          const index = flows.indexOf(flow);
+          if (index > -1) flows.splice(index, 1);
+          
+          // Update flow tracking
+          flowSources.get(flow.from)?.delete(flow.to);
+          flowTargets.get(flow.to)?.delete(flow.from);
+        });
+        
+        // Connect feeder → split
+        addFlow(feeder, splitId, elements, flows, handledPairs, flowSources, flowTargets);
+        
+        // Connect split → activities → join
+        activitiesArray.forEach(activity => {
+          addFlow(splitId, activity, elements, flows, handledPairs, flowSources, flowTargets);
+          addFlow(activity, joinId, elements, flows, handledPairs, flowSources, flowTargets);
+        });
+        
+        // Connect join → convergenceTarget
+        addFlow(joinId, convergenceTarget, elements, flows, handledPairs, flowSources, flowTargets);
+        
+        console.log(`[groupPostConvergenceRelations] Created: ${feeder} → ${splitId} → [${activitiesArray.join(', ')}] → ${joinId} → ${convergenceTarget}`);
+        
+        // Mark as handled
+        activitiesArray.forEach(a => {
+          activitiesArray.forEach(b => {
+            if (a !== b) {
+              handledPairs.add(`${a}-${b}`);
+              handledPairs.add(`${b}-${a}`);
+            }
+          });
+        });
+      } else if (feeders.size > 1) {
+        console.log(`[groupPostConvergenceRelations] Multiple feeders found: [${Array.from(feeders).join(', ')}], skipping ${name} group`);
+      } else {
+        console.log(`[groupPostConvergenceRelations] No feeders found for ${name} group, skipping`);
+      }
+    });
+  });
+}
+
+
 
 // RELATION GROUPING — Bundle Related Activities and Create Gateways
 // Groups together all related activities (e.g., all mutually parallel or exclusive), and tries to insert a gateway split from their common predecessor.
@@ -384,9 +506,15 @@ function groupRelations(
 
   for (const group of groups) {
     // Find a single predecessor that leads to all group members
-    const preds = analysis.activities.filter(p =>
+   const preds = analysis.activities.filter(p =>
       group.every(t => analysis.temporalChains.some(([a, b]) => a === p && b === t))
     );
+
+    console.log(`[Preds Check] For group [${group.join(', ')}], found common preds: ${preds.join(', ')}`);
+
+
+
+
 
     if (preds.length === 1) {
       createSplitJoin(preds[0], group, type, analysis, context);
@@ -394,7 +522,8 @@ function groupRelations(
       // Special case: all group members are start nodes
       createSplitJoin('StartEvent_1', group, type, analysis, context);
     } else {
-      // No valid split origin — skip
+      // Handle no common predecessor - create flows from closest convergence point
+      console.log(`[groupRelations] No common predecessor for group [${group.join(', ')}]. Creating split without join.`);
     }
   }
 }
@@ -441,10 +570,19 @@ export async function buildBPMN(analysis: Analysis): Promise<string> {
     }
   }
 
+  console.log('[FLOW CHECK]');
+  for (const f of flows) {
+    console.log(`Flow: ${f.from} → ${f.to}`);
+  }
+
   // STEP 3 — Handle Special Relations: Parallel, Inclusive (OR), Exclusive (XOR)
   groupRelations(analysis.parallelRelations, 'parallelGateway', analysis, ctx);
   groupRelations(analysis.orRelations ?? [], 'inclusiveGateway', analysis, ctx);
   groupRelations(analysis.exclusiveRelations, 'exclusiveGateway', analysis, ctx);
+
+ // ENHANCED: Handle post-convergence relations of all types 
+  groupPostConvergenceRelations(analysis, ctx);
+
 
   // STEP 4 — Add Start Event + Detect Start Gateway if Needed
   addElement(elements, 'StartEvent_1', 'startEvent');
