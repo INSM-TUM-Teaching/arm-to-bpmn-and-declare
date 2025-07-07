@@ -127,12 +127,12 @@ export function getConstraintEdges(constraint: string, source: string, target: s
                     classes: 'line-triple-1'
                 },
                 {
-                    data: { id: `${idPrefix}-2`, source, target },
-                    classes: 'line-triple-2 compound-arrow-circle'
+                    data: { id: `${idPrefix}-triangle`, source, target },
+                    classes: 'line-triple-2 precedence-arrow'
                 },
                 {
-                    data: { id: `${idPrefix}-2`, source, target },
-                    classes: 'line-triple-2 compound-arrow-triangle'
+                    data: { id: `${idPrefix}-circle`, source, target },
+                    classes: 'line-triple-2 precedence-circle-offset'
                 },
                 {
                     data: { id: `${idPrefix}-3`, source, target },
