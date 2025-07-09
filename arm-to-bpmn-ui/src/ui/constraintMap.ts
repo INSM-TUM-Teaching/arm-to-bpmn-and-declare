@@ -51,11 +51,11 @@ export function getConstraintEdges(constraint: string, source: string, target: s
             return [
                 {
                     data: { id: `${idPrefix}-circle`, source, target },
-                    classes: 'line-negative compound-arrow-circle'
+                    classes: 'line-negative precedence-circle-offset'
                 },
                 {
                     data: { id: `${idPrefix}-triangle`, source, target },
-                    classes: 'line-negative compound-arrow-triangle'
+                    classes: 'line-negative precedence-arrow'
                 }
             ];
         case 'neg_response':
@@ -94,15 +94,15 @@ export function getConstraintEdges(constraint: string, source: string, target: s
                 },
                 {
                     data: { id: `${idPrefix}-2`, source, target },
-                    classes: 'line-triple-2 source-circle compound-arrow-circle'
+                    classes: 'line-triple-2 source-circle-target-triangle'
                 },
                 {
                     data: { id: `${idPrefix}-2`, source, target },
-                    classes: 'line-triple-2 compound-arrow-triangle'
+                    classes: 'line-triple-2'
                 },
                 {
                     data: { id: `${idPrefix}-3`, source, target },
-                    classes: 'line-triple-3'
+                    classes: 'line-triple-3 succession-target-circle'
                 }
             ];
         case 'chain_response':
