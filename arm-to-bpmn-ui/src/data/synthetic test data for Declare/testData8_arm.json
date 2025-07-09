@@ -1,0 +1,44 @@
+{
+    "deposit_money": {
+        "deposit_money": [
+            "x",
+            "x"
+        ],
+        "request_card": [
+            "<d",
+            "⇐"
+        ],
+        "withdraw_money": [
+            "<",
+            "⇐"
+        ]
+    },
+    "request_card": {
+        "deposit_money": [
+            ">d",
+            "⇒"
+        ],
+        "request_card": [
+            "x",
+            "x"
+        ],
+        "withdraw_money": [
+            "-",
+            "-"
+        ]
+    },
+    "withdraw_money": {
+        "deposit_money": [
+            ">",
+            "⇒"
+        ],
+        "request_card": [
+            "-",
+            "-"
+        ],
+        "withdraw_money": [
+            "x",
+            "x"
+        ]
+    }
+}

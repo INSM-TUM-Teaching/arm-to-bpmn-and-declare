@@ -1,0 +1,44 @@
+{
+    "prepare_hands": {
+        "prepare_hands": [
+            "x",
+            "x"
+        ],
+        "clean_nails": [
+            "<",
+            "⇔"
+        ],
+        "apply_manicure": [
+            "-",
+            "-"
+        ]
+    },
+    "clean_nails": {
+        "prepare_hands": [
+            ">",
+            "⇔"
+        ],
+        "clean_nails": [
+            "x",
+            "x"
+        ],
+        "apply_manicure": [
+            "<",
+            "⇔"
+        ]
+    },
+    "apply_manicure": {
+        "prepare_hands": [
+            "-",
+            "-"
+        ],
+        "clean_nails": [
+            ">",
+            "⇔"
+        ],
+        "apply_manicure": [
+            "x",
+            "x"
+        ]
+    }
+}

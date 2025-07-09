@@ -1,0 +1,17 @@
+testData1_arm covers the following constraint: response
+testData2_arm covers the following constraints: succession, chain response
+testData3_arm covers the following constraints: response, precedence, not coexistence, resp existence
+testData4_arm covers the following constraints: precedence, not coexistence, resp existence
+testData5_arm covers the following constraints: chain precedence, chain response
+testData6_arm covers the following constraints: resp existence, chain response
+testData7_arm covers the following constraints: response, resp existence
+testData8_arm covers the following constraints: precedence, chain_precedence
+testData9_arm covers the following constraints: response, succession,precedence
+testData10_arm covers the following constraints: precedence, response
+testData11_arm covers the following constraints: succession
+testData12_arm covers the following constraints: succession
+testData13_arm covers the following constraints: succession
+testData14_arm covers the following constraints: precedence, not coexistence, response
+testData15_arm covers the following constraints: chain_succession, neg_response, coexistence, choice, resp_absence, neg_precedence
+testData16_arm covers the following constraints: chain_succession, neg_response, coexistence, choice, resp_absence, neg_precedence
+testData17_arm covers the following constraints: chain_succession, neg_response, coexistence, choice, resp_absence, neg_precedence

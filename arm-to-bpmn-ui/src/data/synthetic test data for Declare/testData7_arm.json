@@ -1,0 +1,212 @@
+{
+    "register_client": {
+        "register_client": [
+            "x",
+            "x"
+        ],
+        "bill": [
+            "-",
+            "-"
+        ],
+        "room_service": [
+            "-",
+            "-"
+        ],
+        "laundary_service": [
+            "-",
+            "-"
+        ],
+        "additional_cleaning": [
+            "-",
+            "-"
+        ],
+        "check_out": [
+            "-",
+            "-"
+        ],
+        "charge": [
+            "-",
+            "-"
+        ]
+    },
+    "bill": {
+        "register_client": [
+            "<",
+            "⇐"
+        ],
+        "bill": [
+            "x",
+            "x"
+        ],
+        "room_service": [
+            ">",
+            "⇐"
+        ],
+        "laundary_service": [
+            ">",
+            "⇐"
+        ],
+        "additional_cleaning": [
+            ">",
+            "⇐"
+        ],
+        "check_out": [
+            "-",
+            "-"
+        ],
+        "charge": [
+            "-",
+            "-"
+        ]
+    },
+    "room_service": {
+        "register_client": [
+            "<",
+            "⇐"
+        ],
+        "bill": [
+            "<",
+            "⇒"
+        ],
+        "room_service": [
+            "x",
+            "x"
+        ],
+        "laundary_service": [
+            "-",
+            "-"
+        ],
+        "additional_cleaning": [
+            "-",
+            "-"
+        ],
+        "check_out": [
+            "-",
+            "-"
+        ],
+        "charge": [
+            "-",
+            "-"
+        ]
+    },
+    "laundary_service": {
+        "register_client": [
+            "<",
+            "⇐"
+        ],
+        "bill": [
+            "<",
+            "⇒"
+        ],
+        "room_service": [
+            "<",
+            "⇐"
+        ],
+        "laundary_service": [
+            "x",
+            "x"
+        ],
+        "additional_cleaning": [
+            "-",
+            "-"
+        ],
+        "check_out": [
+            "-",
+            "-"
+        ],
+        "charge": [
+            "-",
+            "-"
+        ]
+    },
+    "additional_cleaning": {
+        "register_client": [
+            "<",
+            "⇐"
+        ],
+        "bill": [
+            "<",
+            "⇒"
+        ],
+        "room_service": [
+            "<",
+            "⇐"
+        ],
+        "laundary_service": [
+            "-",
+            "-"
+        ],
+        "additional_cleaning": [
+            "x",
+            "x"
+        ],
+        "check_out": [
+            "-",
+            "-"
+        ],
+        "charge": [
+            "-",
+            "-"
+        ]
+    },
+    "check_out": {
+       "register_client": [
+            "<",
+            "⇐"
+        ],
+        "bill": [
+            "<",
+            "⇐"
+        ],
+        "room_service": [
+            "<",
+            "⇐"
+        ],
+        "laundary_service": [
+            "-",
+            "-"
+        ],
+        "additional_cleaning": [
+            "-",
+            "-"
+        ],
+        "check_out": [
+            "x",
+            "x"
+        ],
+        "charge": [
+            "-",
+            "⇒"
+        ]
+    },
+    "charge": {
+       "register_client": [
+            "<",
+            "⇐"
+        ],
+        "bill": [
+            "<",
+            "⇐"
+        ],
+        "room_service": [
+            "<",
+            "⇐"
+        ],
+        "laundary_service": [
+            "-",
+            "-"
+        ],
+        "additional_cleaning": [
+            "-",
+            "-"
+        ],
+        "check_out": [
+            "-",
+            "⇐"
+        ],
+        "charge": [
+            "x",
+            "x"
+        ]
+    }
+}

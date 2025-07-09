@@ -1,0 +1,158 @@
+{
+    "order": {
+        "order": [
+            "x",
+            "x"
+        ],
+        "accepted": [
+            "<",
+            "⇒"
+        ],
+        "declined": [
+            "<",
+            "⇒"
+        ],
+        "receive_book": [
+            "-",
+            "-"
+        ],
+        "receive_bill": [
+            "-",
+            "-"
+        ],
+        "pay": [
+            "-",
+            "-"
+        ]
+    },
+    "accepted": {
+        "order": [
+            ">",
+            "⇐"
+        ],
+        "accepted": [
+            "x",
+            "x"
+        ],
+        "declined": [
+            "-",
+            "⇎"
+        ],
+        "receive_book": [
+            "<",
+            "⇐"
+        ],
+        "receive_bill": [
+            "-",
+            "-"
+        ],
+        "pay": [
+            "-",
+            "-"
+        ]
+    },
+    "declined": {
+        "order": [
+            ">",
+            "⇐"
+        ],
+        "accepted": [
+            "-",
+            "⇎"
+        ],
+        "declined": [
+            "x",
+            "x"
+        ],
+        "receive_book": [
+            "-",
+            "-"
+        ],
+        "receive_bill": [
+            "-",
+            "-"
+        ],
+        "pay": [
+            "-",
+            "-"
+        ]
+    },
+    "receive_book": {
+        "order": [
+            "-",
+            "⇐"
+        ],
+        "accepted": [
+            ">",
+            "⇒"
+        ],
+        "declined": [
+            "-",
+            "-"
+        ],
+        "receive_book": [
+            "x",
+            "x"
+        ],
+        "receive_bill": [
+            "-",
+            "⇒"
+        ],
+        "pay": [
+            "-",
+            "-"
+        ]
+    },
+    "receive_bill": {
+        "order": [
+            "-",
+            "⇐"
+        ],
+        "accepted": [
+            "-",
+            "-"
+        ],
+        "declined": [
+            "-",
+            "-"
+        ],
+        "receive_book": [
+            "-",
+            "⇒"
+        ],
+        "receive_bill": [
+            "x",
+            "x"
+        ],
+        "pay": [
+            "<",
+            "⇐"
+        ]
+    },
+    "pay": {
+        "order": [
+            "-",
+            "-"
+        ],
+        "accepted": [
+            "-",
+            "-"
+        ],
+        "declined": [
+            "-",
+            "-"
+        ],
+        "receive_book": [
+           "-",
+            "-"
+        ],
+        "receive_bill": [
+            ">",
+            "⇒"
+        ],
+        "pay": [
+            "x",
+            "x"
+        ]
+    }
+}
