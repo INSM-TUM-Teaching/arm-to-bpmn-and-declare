@@ -1,0 +1,22 @@
+{
+    "prepare_facial": {
+        "prepare_facial": [
+            "x",
+            "x"
+        ],
+        "apply_facial": [
+            "<",
+            "⇔"
+        ]
+    },
+    "apply_facial": {
+        "prepare_facial": [
+            ">",
+            "⇔"
+        ],
+        "apply_facial": [
+            "x",
+            "x"
+        ]
+    }
+}

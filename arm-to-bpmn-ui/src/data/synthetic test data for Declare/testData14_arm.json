@@ -1,0 +1,212 @@
+{
+    "xray": {
+        "xray": [
+            "x",
+            "x"
+        ],
+        "medication": [
+            "-",
+            "-"
+        ],
+        "fixation": [
+            "<",
+            "⇐"
+        ],
+        "surgery": [
+            "-",
+            "-"
+        ],
+        "cast": [
+            "-",
+            "-"
+        ],
+        "rehabilitation": [
+            "-",
+            "-"
+        ],
+        "sling": [
+            "-",
+            "-"
+        ]
+    },
+    "medication": {
+        "xray": [
+            "-",
+            "-"
+        ],
+        "medication": [
+            "x",
+            "x"
+        ],
+        "fixation": [
+            "-",
+            "-"
+        ],
+        "surgery": [
+            "-",
+            "-"
+        ],
+        "cast": [
+            "-",
+            "-"
+        ],
+        "rehabilitation": [
+            "-",
+            "-"
+        ],
+        "sling": [
+            "-",
+            "-"
+        ]
+    },
+    "fixation": {
+        "xray": [
+            ">",
+            "⇒"
+        ],
+        "medication": [
+            "-",
+            "-"
+        ],
+        "fixation": [
+            "x",
+            "x"
+        ],
+        "surgery": [
+            "-",
+            "-"
+        ],
+        "cast": [
+            "-",
+            "⇎"
+        ],
+        "rehabilitation": [
+            "-",
+            "-"
+        ],
+        "sling": [
+            "-",
+            "-"
+        ]
+    },
+    "surgery": {
+        "xray": [
+            "-",
+            "-"
+        ],
+        "medication": [
+            "-",
+            "-"
+        ],
+        "fixation": [
+            "-",
+            "-"
+        ],
+        "surgery": [
+            "x",
+            "x"
+        ],
+        "cast": [
+            "-",
+            "-"
+        ],
+        "rehabilitation": [
+            "<",
+            "⇒"
+        ],
+        "sling": [
+            "-",
+            "-"
+        ]
+    },
+    "cast": {
+        "xray": [
+            "-",
+            "-"
+        ],
+        "medication": [
+            "-",
+            "-"
+        ],
+        "fixation": [
+            "-",
+            "⇎"
+        ],
+        "surgery": [
+            "-",
+            "-"
+        ],
+        "cast": [
+            "x",
+            "x"
+        ],
+        "rehabilitation": [
+            "-",
+            "-"
+        ],
+        "sling": [
+            "-",
+            "-"
+        ]
+    },
+    "rehabilitation": {
+        "xray": [
+            "-",
+            "-"
+        ],
+        "medication": [
+            "-",
+            "-"
+        ],
+        "fixation": [
+            "-",
+            "-"
+        ],
+        "surgery": [
+            ">",
+            "⇐"
+        ],
+        "cast": [
+            "-",
+            "-"
+        ],
+        "rehabilitation": [
+            "x",
+            "x"
+        ],
+        "sling": [
+            "-",
+            "-"
+        ]
+    },
+    "sling": {
+        "xray": [
+            "-",
+            "-"
+        ],
+        "medication": [
+            "-",
+            "-"
+        ],
+        "fixation": [
+            "-",
+            "-"
+        ],
+        "surgery": [
+            "-",
+            "-"
+        ],
+        "cast": [
+            "-",
+            "-"
+        ],
+        "rehabilitation": [
+            "-",
+            "-"
+        ],
+        "sling": [
+            "x",
+            "x"
+        ]
+    }
+}

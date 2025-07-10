@@ -1,0 +1,74 @@
+{
+    "prepare_dye": {
+        "prepare_dye": [
+            "x",
+            "x"
+        ],
+        "apply_dye": [
+            "<",
+            "⇐"
+        ],
+        "clean_dye": [
+            "-",
+            "-"
+        ],
+        "comb": [
+            "-",
+            "-"
+        ]
+    },
+    "apply_dye": {
+        "prepare_dye": [
+            ">",
+            "⇒"
+        ],
+        "apply_dye": [
+            "x",
+            "x"
+        ],
+        "clean_dye": [
+            "<",
+            "⇒"
+        ],
+        "comb": [
+            "-",
+            "-"
+        ]
+    },
+    "clean_dye": {
+        "prepare_dye": [
+            "-",
+            "-"
+        ],
+        "apply_dye": [
+            ">",
+            "⇐"
+        ],
+        "clean_dye": [
+            "x",
+            "x"
+        ],
+        "comb": [
+            "<",
+            "⇒"
+        ]
+    },
+    "comb": {
+        "prepare_dye": [
+            "-",
+            "-"
+        ],
+        "apply_dye": [
+            "-",
+            "-"
+        ],
+        "clean_dye": [
+            ">",
+            "⇐"
+        ],
+        "comb": [
+            "x",
+            "x"
+        ]
+    }
+}
