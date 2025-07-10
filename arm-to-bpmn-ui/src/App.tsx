@@ -4,6 +4,7 @@ import BatchTestPage from './pages/BatchTestPage';
 import UploadPage from './pages/UploadPage';
 import Home from './pages/Home';
 import DeclarePage from './pages/Declare';
+import Test from './pages/Test';
 
 function App() {
   return (
@@ -12,15 +13,12 @@ function App() {
         {/* Navigation Bar */}
         <nav className="bg-[#3070B3] text-white py-4 px-16 flex items-center justify-between shadow ">
           <div className="flex items-center space-x-3">
-            <span className="text-lg font-semibold">Logo</span>
+            <Link to="/home"><span className="text-lg font-semibold">Logo</span></Link>
           </div>
           <div className="flex space-x-6 text-sm text-white ml-8">
             <Link to="/home" className="hover:underline hover:text-[#e5e5e5] transition-colors duration-150">Home</Link>
             <Link to="/batch" className="hover:underline hover:text-[#e5e5e5] transition-colors duration-150">Batch Tests</Link>
             <a href="/docs" className="hover:underline hover:text-[#e5e5e5] transition-colors duration-150">Documentation</a>
-            <Link to="/upload" className="hover:underline hover:text-[#e5e5e5] transition-colors duration-150">Upload</Link>
-            <Link to="/bpmn" className="hover:underline hover:text-[#e5e5e5] transition-colors duration-150">BPMN</Link>
-            <Link to="/declare" className="hover:underline hover:text-[#e5e5e5] transition-colors duration-150">Declare</Link>
           </div>
         </nav>
         <main className="py-6 px-2">
@@ -30,6 +28,7 @@ function App() {
             <Route path="/batch" element={<BatchTestPage />} />
             <Route path="/upload" element={<UploadPage />} />
             <Route path="/home" element={<Home />} />
+            <Route path="/test" element={<Test />} />
             <Route path="/declare" element={<DeclarePage />} />
           </Routes>
         </main>

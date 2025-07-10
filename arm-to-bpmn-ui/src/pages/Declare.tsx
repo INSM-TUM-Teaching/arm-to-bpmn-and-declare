@@ -12,6 +12,15 @@ export default function DeclarePage() {
 
   useEffect(() => {
     const armData = location.state?.arm; // Check if ARM data was passed via router state
+      const declareData = location.state?.declare;
+
+      if (declareData) {
+        // Skip translation, just use declare directly
+        setDeclareModel(declareData);
+        setTranslated(true);
+        return;
+      }
+
     if (armData) {
       try {
         const model = translateARMtoDeclare(armData); // Convert to Declare format
@@ -65,9 +74,8 @@ export default function DeclarePage() {
   };
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold text-center mb-6">Declare Modeler</h1>
-
+    <div className="px-6 py-10 md:px-12 lg:px-16 w-full mx-auto">
+      <h1 className="text-2xl font-bold  text-center mb-6 text-[#3070B3]">Declare Modeler</h1>
       {/* Show different views depending on whether translation is done */}
       {!translated ? (
         location.state?.arm ? (
