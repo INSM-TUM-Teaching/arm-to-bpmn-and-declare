@@ -1,6 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
 import { buildBPMN } from '../logic/buildBPMN';
-import { buildBPMNNew } from '../logic/buildBPMN_new';
 import { AdvancedLevelStrategy } from '../logic/other logics/AdvancedLevelStrategy';
 import { buildBPMNModelWithAnalysis } from '../logic/buildBPMNModelWithAnalysis';
 import type { ARMMatrix } from '../logic/translateARM';

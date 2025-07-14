@@ -47,6 +47,7 @@ interface Analysis {
   activities: string[];
   temporalChains: [string, string][];
   directDependencies: [string, string][];
+  activityLevels?: Record<string, number>;
   // Other fields...
 }
 

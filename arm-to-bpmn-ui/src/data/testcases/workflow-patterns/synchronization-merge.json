@@ -1,0 +1,24 @@
+{
+  "description": "Synchronization Merge workflow pattern: (A,C) = (B,C) = (≺,⇔), (A,B) = (-,⇔)",
+  "expected": {
+    "temporalChains": [["A", "C"], ["B", "C"]],
+    "coOccurrence": [["A", "C"], ["B", "C"], ["A", "B"]],
+    "parallelRelations": [["A", "B"]],
+    "bpmn_structure": "synchronization merge (A,B) → C"
+  },
+  "A": {
+    "A": ["x", "x"],
+    "B": ["-", "⇔"],
+    "C": ["<", "⇔"]
+  },
+  "B": {
+    "A": ["-", "⇔"],
+    "B": ["x", "x"],
+    "C": ["<", "⇔"]
+  },
+  "C": {
+    "A": [">", "⇔"],
+    "B": [">", "⇔"],
+    "C": ["x", "x"]
+  }
+}

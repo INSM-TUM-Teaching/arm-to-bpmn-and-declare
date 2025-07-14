@@ -130,7 +130,6 @@ const DeclareVisualizer: React.FC<Props> = ({ declareModel }) => {
 
     cy.layout({
       name: 'cola',
-      nodeSpacing: () => nodeSpacingValue,
       edgeLength: function (edge: any) {
         const constraint = edge.data("constraint");
         return constraint === "succession" ? 500 : 250;
@@ -139,7 +138,7 @@ const DeclareVisualizer: React.FC<Props> = ({ declareModel }) => {
       animate: true,
       randomize: false,
       maxSimulationTime: 1500,
-    }).run();
+    } as any).run();
 
     // Manually reposition "init" nodes
     cy.nodes(".init-node").forEach(n => {

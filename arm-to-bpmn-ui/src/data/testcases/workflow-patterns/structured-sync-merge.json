@@ -1,0 +1,24 @@
+{
+  "description": "Structured Sync. Merge workflow pattern: (A,C) = (B,C) = (≺,⇒), (A,B) = (-,∨)",
+  "expected": {
+    "temporalChains": [["A", "C"], ["B", "C"]],
+    "optionalDependencies": [["A", "C", "optional_to"], ["B", "C", "optional_to"]],
+    "orRelations": [["A", "B"]],
+    "bpmn_structure": "structured synchronization merge (A∨B) → C"
+  },
+  "A": {
+    "A": ["x", "x"],
+    "B": ["-", "∨"],
+    "C": ["<", "⇒"]
+  },
+  "B": {
+    "A": ["-", "∨"],
+    "B": ["x", "x"],
+    "C": ["<", "⇒"]
+  },
+  "C": {
+    "A": [">", "⇐"],
+    "B": [">", "⇐"],
+    "C": ["x", "x"]
+  }
+}

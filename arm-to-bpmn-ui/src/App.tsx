@@ -5,6 +5,7 @@ import UploadPage from './pages/UploadPage';
 import Home from './pages/Home';
 import DeclarePage from './pages/Declare';
 import Test from './pages/Test';
+import RelationshipTestPageEN from './pages/RelationshipTestPageEN';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <div className="flex space-x-6 text-sm text-white ml-8">
             <Link to="/home" className="hover:underline hover:text-[#e5e5e5] transition-colors duration-150">Home</Link>
             <Link to="/batch" className="hover:underline hover:text-[#e5e5e5] transition-colors duration-150">Batch Tests</Link>
+            <Link to="/relationship-test" className="hover:underline hover:text-[#e5e5e5] transition-colors duration-150">Relationship Tests</Link>
             <a href="/docs" className="hover:underline hover:text-[#e5e5e5] transition-colors duration-150">Documentation</a>
           </div>
         </nav>
@@ -30,6 +32,7 @@ function App() {
             <Route path="/home" element={<Home />} />
             <Route path="/test" element={<Test />} />
             <Route path="/declare" element={<DeclarePage />} />
+            <Route path="/relationship-test" element={<RelationshipTestPageEN />} />
           </Routes>
         </main>
       </div>
