@@ -94,7 +94,7 @@ export function detectExclusiveRelations(matrix: ARMMatrix): Array<[string, stri
       const b = keys[j];
       const exist = matrix[a]?.[b]?.[1] || matrix[b]?.[a]?.[1];
       // if (["⇎", "∨", "¬"].includes(exist)) {
-      if (["⇎", "¬"].includes(exist)) {
+      if (["⇎", "¬∧"].includes(exist)) {
         exclusives.push([a, b]);
       }
     }
@@ -127,7 +127,7 @@ export function detectParallelRelations(matrix: ARMMatrix): Array<[string, strin
       const noTemporalDependency = ta === "-" && tb === "-";
 
       // Check if they are not exclusive
-      const notExclusive = !["⇎", "∨", "¬"].includes(ea) && !["⇎", "∨", "¬"].includes(eb);
+      const notExclusive = !["⇎", "∨", "¬∧"].includes(ea) && !["⇎", "∨", "¬∧"].includes(eb);
 
       if (noTemporalDependency && notExclusive) {
         // Check if they have common predecessors or successors (indicating split/merge pattern)

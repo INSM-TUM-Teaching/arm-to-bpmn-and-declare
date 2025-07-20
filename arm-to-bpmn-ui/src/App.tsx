@@ -9,19 +9,19 @@ import Test from './pages/Test';
 function App() {
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-white min-w-screen">
+      <div className="min-h-screen bg-gray-50 min-w-screen">
         {/* Navigation Bar */}
-        <nav className="bg-[#3070B3] text-white py-4 px-16 flex items-center justify-between shadow ">
+        <nav className="bg-white text-[#3070B3] py-4 px-16 flex items-center justify-between shadow ">
           <div className="flex items-center space-x-3">
-            <Link to="/home"><span className="text-lg font-semibold">Logo</span></Link>
+            <Link to="/home"><span className="text-lg font-semibold"><img src='/logo.png' className='h-[40px]'></img></span></Link>
           </div>
           <div className="flex space-x-6 text-sm text-white ml-8">
-            <Link to="/home" className="hover:underline hover:text-[#e5e5e5] transition-colors duration-150">Home</Link>
-            <Link to="/batch" className="hover:underline hover:text-[#e5e5e5] transition-colors duration-150">Batch Tests</Link>
-            <a href="/docs" className="hover:underline hover:text-[#e5e5e5] transition-colors duration-150">Documentation</a>
+            <Link to="/home" className="text-[#3070B3] hover:underline hover:text-blue-600 transition-colors duration-150">Home</Link>
+            <Link to="/batch" className="text-[#3070B3] hover:underline hover:text-600 transition-colors duration-150">Batch Tests</Link>
+            <a href="/docs" className=" text-[#3070B3] hover:underline hover:text-600 transition-colors duration-150">Documentation</a>
           </div>
         </nav>
-        <main className="py-6 px-2">
+        <main className="">
           <Routes>
             <Route path="/" element={<Navigate to="/home" replace />} />
             <Route path="/bpmn" element={<BPMN />} />

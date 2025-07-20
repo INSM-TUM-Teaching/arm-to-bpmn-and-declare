@@ -1,6 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
 import { buildBPMN } from '../logic/buildBPMN';
-import { buildBPMNNew } from '../logic/buildBPMN_new';
 import { AdvancedLevelStrategy } from '../logic/other logics/AdvancedLevelStrategy';
 import { buildBPMNModelWithAnalysis } from '../logic/buildBPMNModelWithAnalysis';
 import type { ARMMatrix } from '../logic/translateARM';
@@ -117,7 +116,7 @@ const sampleARM4: ARMMatrix = {
   "d": { "a": ["-", "∨"], "b": ["-", "∨"], "c": ["-", "∨"], "d": ["x", "x"] }
 };
 
-//event log without noise 1 
+//event log without noise 1  -- covered
 const sampleARM9: ARMMatrix = {
   "a": { "a": ["x", "x"], "b": ["<d", "⇐"], "c": ["<", "⇐"], "d": ["<", "⇔"], "e": ["<d", "⇐"] },
   "b": { "a": [">d", "⇒"], "b": ["x", "x"], "c": ["<d", "⇔"], "d": ["<", "⇒"], "e": ["-", "⇎"] },
@@ -166,6 +165,14 @@ const sampleARM13: ARMMatrix = {
   "e": { "a": [">d", "⇒"], "b": ["-", "⇎"], "c": ["-", "⇒"], "d": ["<", "⇒"], "e": ["x", "x"]},
 }
 
+//event log without noise 6 
+export const sampleARM16: ARMMatrix = {
+  "a": { "a": ["x", "x"], "b": ["<", "⇔"], "c": ["<", "⇔"], "d": [">d", "-"]},
+  "b": { "a": [">", "⇔"], "b": ["x", "x"], "c": ["-", "⇔"], "d": [">", "-"]},
+  "c": { "a": [">", "⇔"], "b": ["-", "⇔"], "c": ["x", "x"], "d": [">", "-"]},
+  "d": { "a": ["<d", "-"], "b": ["<", "-"], "c": ["<", "-"], "d": ["x", "x"]},
+};
+
 //event log without noise 7 
 const sampleARM14: ARMMatrix = {
   "a": { "a": ["x", "x"], "b": ["-", "⇐"], "c": ["-", "⇐"], "d": ["-", "⇔"], "e": ["-", "⇔"] },
@@ -175,7 +182,23 @@ const sampleARM14: ARMMatrix = {
   "e": { "a": ["-", "⇔"], "b": [">", "⇐"], "c": [">", "⇐"], "d": ["-", "⇔"], "e": ["x", "x"]},
 }
 
+//event log qithout noise 9
+const sampleARM17: ARMMatrix = {
+  "a": { "a": ["x", "x"], "b": ["-", "⇎"], "c": ["<", "⇒"], "d": ["<", "⇒"], "e": ["-", "⇎"], "f": ["-", "⇎"] },
+  "b": { "a": ["-", "⇎"], "b": ["x", "x"], "c": ["<", "⇒"], "d": ["<", "⇒"], "e": ["-", "⇎"], "f": ["-", "⇎"] },
+  "c": { "a": [">", "⇐"], "b": [">", "⇐"], "c": ["x", "x"], "d": ["-", "⇔"], "e": ["-", "⇎"], "f": ["-", "⇎"] },
+  "d": { "a": [">", "⇐"], "b": [">", "⇐"], "c": ["-", "⇔"], "d": ["x", "x"], "e": ["-", "⇎"], "f": ["-", "⇎"] },
+  "e": { "a": ["-", "⇎"], "b": ["-", "⇎"], "c": ["-", "⇎"], "d": ["-", "⇎"], "e": ["x", "x"], "f": ["<d", "⇔"] },
+  "f": { "a": ["-", "⇎"], "b": ["-", "⇎"], "c": ["-", "⇎"], "d": ["-", "⇎"], "e": [">d", "⇔"], "f": ["x", "x"] }
+}
 
+//event log 10 --covered
+export const sampleARM15: ARMMatrix = {
+  "a": { "a": ["x", "x"], "b": ["<d", "⇐"], "c": ["<d", "⇐"], "d": ["-", "⇎"]},
+  "b": { "a": [">d", "⇒"], "b": ["x", "x"], "c": ["-", "⇎"], "d": ["-", "⇎"]},
+  "c": { "a": [">d", "⇒"], "b": ["-", "⇎"], "c": ["x", "x"], "d": ["-", "⇎"]},
+  "d": { "a": ["-", "⇎"], "b": ["-", "⇎"], "c": ["-", "⇎"], "d": ["x", "x"]},
+};
 
 
 
@@ -213,7 +236,7 @@ function Test() {
   }, [bpmnXml]);
 
   const testLogicFunctions = async () => {
-    const rawAnalysis = buildBPMNModelWithAnalysis(sampleARM12);
+    const rawAnalysis = buildBPMNModelWithAnalysis(sampleARM4);
     
     const analysis = {
       activities: rawAnalysis.topoOrder,
