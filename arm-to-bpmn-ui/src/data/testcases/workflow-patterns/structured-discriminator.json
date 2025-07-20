@@ -1,0 +1,24 @@
+{
+  "description": "Structured Discriminator workflow pattern: (A,C) = (B,C) = (≺d,⇒), (A,B) = (-,⇔)",
+  "expected": {
+    "temporalChains": [["A", "C"], ["B", "C"]],
+    "optionalDependencies": [["A", "C", "optional_to"], ["B", "C", "optional_to"]],
+    "coOccurrence": [["A", "B"]],
+    "bpmn_structure": "structured discriminator (A⇔B) →d C"
+  },
+  "A": {
+    "A": ["x", "x"],
+    "B": ["-", "⇔"],
+    "C": ["<d", "⇒"]
+  },
+  "B": {
+    "A": ["-", "⇔"],
+    "B": ["x", "x"],
+    "C": ["<d", "⇒"]
+  },
+  "C": {
+    "A": [">d", "⇐"],
+    "B": [">d", "⇐"],
+    "C": ["x", "x"]
+  }
+}

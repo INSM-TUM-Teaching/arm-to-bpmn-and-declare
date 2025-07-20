@@ -1,0 +1,24 @@
+{
+  "description": "Deferred Choice workflow pattern: (A,B) = (A,C) = (≺,⇐), (B,C) = (-,⇎)",
+  "expected": {
+    "temporalChains": [["A", "B"], ["A", "C"]],
+    "optionalDependencies": [["B", "A", "optional_to"], ["C", "A", "optional_to"]],
+    "exclusiveRelations": [["B", "C"]],
+    "bpmn_structure": "deferred choice A → (B|C) - environment decides"
+  },
+  "A": {
+    "A": ["x", "x"],
+    "B": ["<", "⇐"],
+    "C": ["<", "⇐"]
+  },
+  "B": {
+    "A": [">", "⇒"],
+    "B": ["x", "x"],
+    "C": ["-", "⇎"]
+  },
+  "C": {
+    "A": [">", "⇒"],
+    "B": ["-", "⇎"],
+    "C": ["x", "x"]
+  }
+}

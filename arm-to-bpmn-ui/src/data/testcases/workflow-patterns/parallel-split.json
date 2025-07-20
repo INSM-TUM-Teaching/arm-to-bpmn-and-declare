@@ -1,0 +1,24 @@
+{
+  "description": "Parallel Split workflow pattern: (A,B) = (A,C) = (≺,⇔), (B,C) = (-,⇔)",
+  "expected": {
+    "temporalChains": [["A", "B"], ["A", "C"]],
+    "coOccurrence": [["A", "B"], ["A", "C"], ["B", "C"]],
+    "parallelRelations": [["B", "C"]],
+    "bpmn_structure": "parallel gateway split A → (B,C)"
+  },
+  "A": {
+    "A": ["x", "x"],
+    "B": ["<", "⇔"],
+    "C": ["<", "⇔"]
+  },
+  "B": {
+    "A": [">", "⇔"],
+    "B": ["x", "x"],
+    "C": ["-", "⇔"]
+  },
+  "C": {
+    "A": [">", "⇔"],
+    "B": ["-", "⇔"],
+    "C": ["x", "x"]
+  }
+}

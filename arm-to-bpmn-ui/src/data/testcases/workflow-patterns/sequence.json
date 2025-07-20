@@ -1,0 +1,16 @@
+{
+  "description": "Sequence workflow pattern: (A,B) = (≺,⇔)",
+  "expected": {
+    "temporalChains": [["A", "B"]],
+    "coOccurrence": [["A", "B"]],
+    "bpmn_structure": "sequential flow A → B"
+  },
+  "A": {
+    "A": ["x", "x"],
+    "B": ["<d", "⇔"]
+  },
+  "B": {
+    "A": [">d", "⇔"],
+    "B": ["x", "x"]
+  }
+}

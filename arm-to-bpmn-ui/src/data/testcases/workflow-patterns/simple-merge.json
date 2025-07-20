@@ -1,0 +1,24 @@
+{
+  "description": "Simple Merge workflow pattern: (A,C) = (B,C) = (≺,⇒), (B,C) = (-,⇎)",
+  "expected": {
+    "temporalChains": [["A", "C"], ["B", "C"]],
+    "optionalDependencies": [["A", "C", "optional_to"], ["B", "C", "optional_to"]],
+    "exclusiveRelations": [["A", "B"]],
+    "bpmn_structure": "simple merge (A|B) → C"
+  },
+  "A": {
+    "A": ["x", "x"],
+    "B": ["-", "⇎"],
+    "C": ["<", "⇒"]
+  },
+  "B": {
+    "A": ["-", "⇎"],
+    "B": ["x", "x"],
+    "C": ["<", "⇒"]
+  },
+  "C": {
+    "A": [">", "⇐"],
+    "B": [">", "⇐"],
+    "C": ["x", "x"]
+  }
+}

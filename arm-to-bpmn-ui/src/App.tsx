@@ -5,6 +5,7 @@ import UploadPage from './pages/UploadPage';
 import Home from './pages/Home';
 import DeclarePage from './pages/Declare';
 import Test from './pages/Test';
+import RelationshipTestPageEN from './pages/RelationshipTestPageEN';
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
             <Route path="/home" element={<Home />} />
             <Route path="/test" element={<Test />} />
             <Route path="/declare" element={<DeclarePage />} />
+            <Route path="/relationship-test" element={<RelationshipTestPageEN />} />
           </Routes>
         </main>
       </div>
