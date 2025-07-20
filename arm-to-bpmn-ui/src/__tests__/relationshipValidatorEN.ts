@@ -125,27 +125,37 @@ export function validateBpmnStructure(
     return errors;
   }
 
+  console.log('BPMN XML Content:', bpmnXml);
+
   // Check for specific elements based on expected structure
   if (expectedStructure.includes('XOR')) {
-    if (!bpmnXml.includes('exclusiveGateway')) {
+    const hasExclusiveGateway = bpmnXml.includes('exclusiveGateway');
+    console.log('Checking for XOR gateway:', hasExclusiveGateway);
+    if (!hasExclusiveGateway) {
       errors.push('Expected XOR gateway not found in BPMN');
     }
   }
 
   if (expectedStructure.includes('OR gateway')) {
-    if (!bpmnXml.includes('inclusiveGateway')) {
+    const hasInclusiveGateway = bpmnXml.includes('inclusiveGateway');
+    console.log('Checking for OR gateway:', hasInclusiveGateway);
+    if (!hasInclusiveGateway) {
       errors.push('Expected OR gateway not found in BPMN');
     }
   }
 
   if (expectedStructure.includes('parallel')) {
-    if (!bpmnXml.includes('parallelGateway')) {
+    const hasParallelGateway = bpmnXml.includes('parallelGateway');
+    console.log('Checking for parallel gateway:', hasParallelGateway);
+    if (!hasParallelGateway) {
       errors.push('Expected parallel gateway not found in BPMN');
     }
   }
 
   if (expectedStructure.includes('sequential flow')) {
-    if (!bpmnXml.includes('sequenceFlow')) {
+    const hasSequenceFlow = bpmnXml.includes('sequenceFlow');
+    console.log('Checking for sequence flow:', hasSequenceFlow);
+    if (!hasSequenceFlow) {
       errors.push('Expected sequence flow not found in BPMN');
     }
   }

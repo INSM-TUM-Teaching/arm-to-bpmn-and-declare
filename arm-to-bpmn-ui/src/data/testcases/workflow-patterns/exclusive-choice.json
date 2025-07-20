@@ -4,7 +4,7 @@
     "temporalChains": [["A", "B"], ["A", "C"]],
     "optionalDependencies": [["B", "A", "optional_to"], ["C", "A", "optional_to"]],
     "exclusiveRelations": [["B", "C"]],
-    "bpmn_structure": "XOR gateway A → (B|C)"
+    "bpmn_structure": "XOR, gateway A → (B|C)"
   },
   "A": {
     "A": ["x", "x"],
