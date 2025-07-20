@@ -82,7 +82,7 @@ export function extractTemporalChains(matrix: ARMMatrix): Array<[string, string]
 }
 
 // Detect exclusive relationships between activities.
-// Looks for existential relations that imply exclusivity: ⇎, ∨, ¬
+// Looks for existential relations that imply exclusivity: ⇎, ¬∧
 
 export function detectExclusiveRelations(matrix: ARMMatrix): Array<[string, string]> {
   const exclusives: Array<[string, string]> = [];
@@ -92,7 +92,7 @@ export function detectExclusiveRelations(matrix: ARMMatrix): Array<[string, stri
     for (let j = i + 1; j < keys.length; j++) {
       const a = keys[i];
       const b = keys[j];
-      const exist = matrix[a]?.[b]?.[1] || matrix[b]?.[a]?.[1];
+      const exist = matrix[a]?.[b]?.[1] || matrix[b]?.[a]?.[1]; 
       // if (["⇎", "∨", "¬"].includes(exist)) {
       if (["⇎", "¬∧"].includes(exist)) {
         exclusives.push([a, b]);

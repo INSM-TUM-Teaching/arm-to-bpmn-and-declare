@@ -398,6 +398,27 @@ function createSplitJoin(
   }
 }
 
+function inferStartGatewayType(targets: string[], analysis: Analysis): 'exclusiveGateway' | 'inclusiveGateway' | 'parallelGateway' {
+  let xorCount = 0, orCount = 0, andCount = 0;
+
+  for (let i = 0; i < targets.length; i++) {
+    for (let j = i + 1; j < targets.length; j++) {
+      const a = targets[i];
+      const b = targets[j];
+
+      if (analysis.exclusiveRelations.some(([x, y]) => (x === a && y === b) || (x === b && y === a))) xorCount++;
+      else if (analysis.orRelations?.some(([x, y]) => (x === a && y === b) || (x === b && y === a))) orCount++;
+      else if (analysis.parallelRelations.some(([x, y]) => (x === a && y === b) || (x === b && y === a))) andCount++;
+    }
+  }
+
+  const total = xorCount + orCount + andCount;
+
+  if (xorCount === total) return 'exclusiveGateway';
+  if (orCount === total) return 'inclusiveGateway';
+  return 'parallelGateway'; // fallback or default
+}
+
 
 /**
  * Create split after an existing gateway
@@ -1006,20 +1027,35 @@ export async function buildBPMN(analysis: Analysis): Promise<string> {
    * STEP 5 — Merge Multiple Start Splits under One Gateway (if needed)
    * ============================================================================
    */
-  const startSplits = ['exclusiveGateway_Split_StartEvent_1', 'parallelGateway_Split_StartEvent_1', 'inclusiveGateway_Split_StartEvent_1']
-    .filter(g => elements.has(g));
+  // STEP 5 — Smart Merge of Multiple StartEvent Gateways
+    const startSplits = ['exclusiveGateway_Split_StartEvent_1', 'parallelGateway_Split_StartEvent_1', 'inclusiveGateway_Split_StartEvent_1']
+      .filter(g => elements.has(g));
 
-  if (startSplits.length > 1) {
-    const mergedStartId = 'parallelGateway_Split_Start';
-    addElement(elements, mergedStartId, 'parallelGateway', 'AND Split');
-    addFlow('StartEvent_1', mergedStartId, elements, flows, handledPairs, flowSources, flowTargets);
+    if (startSplits.length > 1) {
+      // Get the target activities connected to those start gateways
+      const targetActivities = startSplits
+        .map(g => flows.find(f => f.from === g)?.to)
+        .filter((x): x is string => !!x);
 
-    for (const g of startSplits) {
-      const idx = flows.findIndex(f => f.from === 'StartEvent_1' && f.to === g);
-      if (idx !== -1) flows.splice(idx, 1); // Remove old flow
-      addFlow(mergedStartId, g, elements, flows, handledPairs, flowSources, flowTargets);
+      // Determine what type of split we should use based on the relations
+      const inferredType = inferStartGatewayType(targetActivities, analysis);
+      const mergedStartId = `${inferredType}_Split_Start`;
+      const label = getGatewayLabel(inferredType, 'Split');
+
+
+      // Add the merged gateway
+      addElement(elements, mergedStartId, inferredType, label);
+      addFlow('StartEvent_1', mergedStartId, elements, flows, handledPairs, flowSources, flowTargets);
+
+      // Reconnect each original gateway to the new merged gateway
+      for (const g of startSplits) {
+        const idx = flows.findIndex(f => f.from === 'StartEvent_1' && f.to === g);
+        if (idx !== -1) flows.splice(idx, 1); // remove old flow
+        addFlow(mergedStartId, g, elements, flows, handledPairs, flowSources, flowTargets);
+      }
     }
-  }
+
+
 
   /* ============================================================================
    * STEP 6 — Add End Event

@@ -19,7 +19,7 @@ function App() {
           <div className="flex space-x-6 text-sm text-white ml-8">
             <Link to="/home" className="text-[#3070B3] hover:underline hover:text-blue-600 transition-colors duration-150">Home</Link>
             <Link to="/batch" className="text-[#3070B3] hover:underline hover:text-600 transition-colors duration-150">Batch Tests</Link>
-            <Link to="/relationship-test" className="hover:underline hover:text-[#e5e5e5] transition-colors duration-150">Relationship Tests</Link>
+            <Link to="/relationship-test" className="text-[#3070B3] hover:underline hover:text-600  transition-colors duration-150">Relationship Tests</Link>
             <a href="/docs" className=" text-[#3070B3] hover:underline hover:text-600 transition-colors duration-150">Documentation</a>
           </div>
         </nav>

@@ -166,6 +166,7 @@ const sampleARM13: ARMMatrix = {
 }
 
 //event log without noise 6 
+//skips
 export const sampleARM16: ARMMatrix = {
   "a": { "a": ["x", "x"], "b": ["<", "⇔"], "c": ["<", "⇔"], "d": [">d", "-"]},
   "b": { "a": [">", "⇔"], "b": ["x", "x"], "c": ["-", "⇔"], "d": [">", "-"]},
@@ -173,7 +174,7 @@ export const sampleARM16: ARMMatrix = {
   "d": { "a": ["<d", "-"], "b": ["<", "-"], "c": ["<", "-"], "d": ["x", "x"]},
 };
 
-//event log without noise 7 
+//event log without noise 7 //also inucludes skips
 const sampleARM14: ARMMatrix = {
   "a": { "a": ["x", "x"], "b": ["-", "⇐"], "c": ["-", "⇐"], "d": ["-", "⇔"], "e": ["-", "⇔"] },
   "b": { "a": ["-", "⇒"], "b": ["x", "x"], "c": ["-", "⇎"], "d": ["<", "⇒"], "e": ["<", "⇒"] },
@@ -182,7 +183,7 @@ const sampleARM14: ARMMatrix = {
   "e": { "a": ["-", "⇔"], "b": [">", "⇐"], "c": [">", "⇐"], "d": ["-", "⇔"], "e": ["x", "x"]},
 }
 
-//event log qithout noise 9
+//event log qithout noise 9 
 const sampleARM17: ARMMatrix = {
   "a": { "a": ["x", "x"], "b": ["-", "⇎"], "c": ["<", "⇒"], "d": ["<", "⇒"], "e": ["-", "⇎"], "f": ["-", "⇎"] },
   "b": { "a": ["-", "⇎"], "b": ["x", "x"], "c": ["<", "⇒"], "d": ["<", "⇒"], "e": ["-", "⇎"], "f": ["-", "⇎"] },
@@ -236,7 +237,7 @@ function Test() {
   }, [bpmnXml]);
 
   const testLogicFunctions = async () => {
-    const rawAnalysis = buildBPMNModelWithAnalysis(sampleARM4);
+    const rawAnalysis = buildBPMNModelWithAnalysis(sampleARM11);
     
     const analysis = {
       activities: rawAnalysis.topoOrder,
