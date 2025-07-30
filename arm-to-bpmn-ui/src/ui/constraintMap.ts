@@ -51,7 +51,7 @@ export function getConstraintEdges(constraint: string, source: string, target: s
             return [
                 {
                     data: { id: `${idPrefix}-circle`, source, target },
-                    classes: 'line-negative precedence-circle-offset'
+                    classes: 'precedence-circle-offset'
                 },
                 {
                     data: { id: `${idPrefix}-triangle`, source, target },
