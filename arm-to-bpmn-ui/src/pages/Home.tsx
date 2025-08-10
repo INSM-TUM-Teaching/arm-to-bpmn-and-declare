@@ -189,8 +189,8 @@ export default function HomePage() {
           <div className="flex flex-wrap justify-center gap-4">
             <span className="bg-gray-200 text-sm px-4 py-2 rounded-md font-medium">Import BPMN: <code>.bpmn</code></span>
             <span className="bg-gray-200 text-sm px-4 py-2 rounded-md font-medium">Export BPMN: <code>.bpmn</code>, <code>.svg</code></span>
-            <span className="bg-gray-200 text-sm px-4 py-2 rounded-md font-medium">Import ConDec: <code>.xml</code>, <code>.txt</code>, <code>.json</code></span>
-            <span className="bg-gray-200 text-sm px-4 py-2 rounded-md font-medium">Export ConDec: <code>.json</code>, <code>.svg</code></span>
+            <span className="bg-gray-200 text-sm px-4 py-2 rounded-md font-medium">Import ConDec: <code>.json</code></span>
+            <span className="bg-gray-200 text-sm px-4 py-2 rounded-md font-medium">Export ConDec: <code>.json</code>, <code>.png</code></span>
           </div>
         </div>
       </div>

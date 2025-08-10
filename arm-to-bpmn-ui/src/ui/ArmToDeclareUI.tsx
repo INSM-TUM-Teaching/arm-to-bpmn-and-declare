@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { translateARMtoDeclare } from '../core/translateARM';
 import { DeclareModel } from '../types/types';
+import DeclareVisualizer from "./declareVisualizer";
 
 
 export default function ArmToDeclareUI() {
@@ -8,10 +9,18 @@ export default function ArmToDeclareUI() {
   const [output, setOutput] = useState<DeclareModel | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const saveToBackend = useCallback(async (model: DeclareModel) => {
+    const res = await fetch("http://localhost:5174/api/save-declare-model", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(model),
+    });
+    if (!res.ok) {
+      throw new Error("Failed to save model to backend");
+    }
+  }, []);
 
-  /*
-    Translates ARM JSON input into a Declare model, updates the output state, and POST the result to a backend server for persistence.
-  */
+  // Translate button: compute model, set state, save to backend
   const handleTranslate = async () => {
     try {
       const parsed = JSON.parse(inputJSON);
@@ -19,20 +28,23 @@ export default function ArmToDeclareUI() {
       setOutput(result);
       setError(null);
 
-
-      // Send to backend
-      const response = await fetch('http://localhost:5174/api/save-declare-model', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(result),
-      });
-
-
-      if (!response.ok) throw new Error("Failed to save model to backend");
-      alert('Declare model saved and ready to visualize!');
+      await saveToBackend(result);
+      alert("Declare model saved and ready to visualize!");
     } catch (err: any) {
-      setError('Translation failed: ' + err.message);
+      setError("Translation failed: " + err.message);
       setOutput(null);
+    }
+  };
+
+  // Any edit from the visualizer: update state and persist immediately
+  const handleModelChange = async (next: DeclareModel) => {
+    setOutput(next);              // update UI immediately
+    try {
+      await saveToBackend(next);  // persist every edit
+    } catch (e: any) {
+      // keep optimistic UI, but surface error if desired
+      console.error(e);
+      setError("Save failed: " + (e?.message ?? "Unknown error"));
     }
   };
 
@@ -111,7 +123,11 @@ export default function ArmToDeclareUI() {
 
       {error && <p className="text-red-600 mt-4 whitespace-pre-wrap">{error}</p>}
 
-
+      {output && (
+        <div className="mt-8">
+          <DeclareVisualizer declareModel={output} onChange={handleModelChange} />
+        </div>
+      )}
       {output && (
         <div className="mt-6">
           <h2 className="text-xl font-semibold mb-2">Translated Declare Model:</h2>
