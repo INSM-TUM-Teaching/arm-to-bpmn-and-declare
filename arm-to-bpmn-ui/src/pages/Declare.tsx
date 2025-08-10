@@ -12,14 +12,14 @@ export default function DeclarePage() {
 
   useEffect(() => {
     const armData = location.state?.arm; // Check if ARM data was passed via router state
-      const declareData = location.state?.declare;
+    const declareData = location.state?.declare;
 
-      if (declareData) {
-        // Skip translation, just use declare directly
-        setDeclareModel(declareData);
-        setTranslated(true);
-        return;
-      }
+    if (declareData) {
+      // Skip translation, just use declare directly
+      setDeclareModel(declareData);
+      setTranslated(true);
+      return;
+    }
 
     if (armData) {
       try {
@@ -74,33 +74,41 @@ export default function DeclarePage() {
   };
 
   return (
-    <div className="px-6 py-10 md:px-12 lg:px-16 w-full mx-auto">
-      <h1 className="text-2xl font-bold  text-center mb-6 text-[#3070B3]">Declare Modeler</h1>
-      {/* Show different views depending on whether translation is done */}
-      {!translated ? (
-        location.state?.arm ? (
-          // If ARM is being processed from navigation state
-          <p className="text-center text-lg">Processing ARM data...</p>
-        ) : (
-          // If no data passed, show manual file upload option
-          <div className="space-y-6 text-center">
-            <div>
-              <h2 className="text-lg font-semibold mb-2">
-                Upload Activity Relationship Matrix (ARM) in JSON format
-              </h2>
-              <input
-                type="file"
-                accept="application/json"
-                onChange={handleARMUpload}
-                className="p-2 border rounded"
-              />
-            </div>
-          </div>
-        )
-      ) : (
-        // Once translated, render the visualization component
-        declareModel && <DeclareVisualizer declareModel={declareModel} />
-      )}
+    <div className="min-h-screen bg-white min-w-screen">
+      <main className="px-6 py-10 md:px-12 lg:px-16">
+        <header className="mb-12">
+          <h1 className="text-2xl font-bold text-[#3070B3]">ARM to Declare</h1>
+          <p className="text-gray-600 mt-2">Easily translate your ARM matrices into Declare models.</p>
+        </header>
+        <div className="flex flex-wrap gap-4 mb-8">
+          {/* Show different views depending on whether translation is done */}
+          {!translated ? (
+            location.state?.arm ? (
+              // If ARM is being processed from navigation state
+              <p className="text-center text-lg">Processing ARM data...</p>
+            ) : (
+              // If no data passed, show manual file upload option
+              <div className="space-y-6 text-center">
+                <div>
+                  <h2 className="text-lg font-semibold mb-2">
+                    Upload Activity Relationship Matrix (ARM) in JSON format
+                  </h2>
+                  <input
+                    type="file"
+                    accept="application/json"
+                    onChange={handleARMUpload}
+                    className="p-2 border rounded"
+                  />
+                </div>
+              </div>
+            )
+          ) : (
+            // Once translated, render the visualization component
+            declareModel && <DeclareVisualizer declareModel={declareModel} />
+          )}
+        </div>
+      </main>
     </div>
+
   );
 }
